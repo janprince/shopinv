@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% load ui humanize %}
+{% block title %}Dashboard · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a class="btn btn-quiet btn-sm" href="{% url 'inventory:receive' %}">{% icon "truck" 16 %} Receive stock</a>
+  <a class="btn btn-primary btn-sm" href="{% url 'sales:pos' %}">{% icon "cart" 16 %} New sale</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Good day, {{ request.user.first_name|default:request.user.username }}</h1>
+    <p class="lede">{{ today|date:"l, j F Y" }}{% if not is_owner %} · Shopkeeper view{% endif %}</p>
+  </div>
+  <div class="page-actions d-lg-none">
+    <a class="btn btn-primary btn-sm" href="{% url 'sales:pos' %}">{% icon "cart" 16 %} New sale</a>
+  </div>
+</div>
+
+{# ---------- Today, first, because that is what everyone opens this for ---------- #}
+<div class="stat-grid mb-3">
+  <a class="stat is-feature" href="{% url 'sales:history' %}?period=today">
+    <span class="stat-icon" aria-hidden="true">{% icon "wallet" 20 %}</span>
+    <span class="stat-body">
+      <span class="stat-label">Sold today</span>
+      <span class="stat-value">{{ m.today.revenue|cedis }}</span>
+      <span class="stat-meta">
+        {{ m.today.count }} sale{{ m.today.count|pluralize }} ·
+        {{ m.today.units|qty }} item{{ m.today.units|floatformat:0|pluralize }}
+        {% if m.today_change is not None %}
+          · <span class="trend {% if m.today_change >= 0 %}is-up{% else %}is-down{% endif %}">
+              {% if m.today_change >= 0 %}▲{% else %}▼{% endif %}{{ m.today_change|floatformat:0 }}%
+            </span> vs yesterday
+        {% endif %}
+      </span>
+    </span>
+  </a>
+
+  {% if is_owner %}
+    <a class="stat" href="{% url 'reports:profit' %}?period=today">
+      <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">Estimated profit today</span>
+        <span class="stat-value">{{ m.today.profit|cedis }}</span>
+        <span class="stat-meta">
+          {% if m.today.margin_percent %}{{ m.today.margin_percent|floatformat:0 }}% margin · {% endif %}
+          Before expenses
+        </span>
+      </span>
+    </a>
+  {% else %}
+    <a class="stat" href="{% url 'sales:history' %}?period=today">
+      <span class="stat-icon is-info" aria-hidden="true">{% icon "receipt" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">Sales recorded today</span>
+        <span class="stat-value">{{ m.today.count }}</span>
+        <span class="stat-meta">Average {{ m.today.average_sale|cedis }} per sale</span>
+      </span>
+    </a>
+  {% endif %}
+
+  <a class="stat" href="{% url 'catalog:product_list' %}?stock=restock">
+    <span class="stat-icon {% if m.low_stock_count %}is-warning{% endif %}" aria-hidden="true">{% icon "box" 20 %}</span>
+    <span class="stat-body">
+      <span class="stat-label">Needs restocking</span>
+      <span class="stat-value">{{ m.low_stock_count }}</span>
+      <span class="stat-meta">
+        {% if m.out_of_stock_count %}{{ m.out_of_stock_count }} completely out of stock{% else %}Nothing out of stock{% endif %}
+      </span>
+    </span>
+  </a>
+
+  <a class="stat" href="{% url 'inventory:expiring' %}">
+    <span class="stat-icon {% if m.expiring_count or m.expired_count %}is-danger{% endif %}" aria-hidden="true">{% icon "clock" 20 %}</span>
+    <span class="stat-body">
+      <span class="stat-label">Expiring soon</span>
+      <span class="stat-value">{{ m.expiring_count }}</span>
+      <span class="stat-meta">
+        {% if m.expired_count %}{{ m.expired_count }} batch{{ m.expired_count|pluralize:"es" }} already expired
+        {% else %}Nothing expired{% endif %}
+      </span>
+    </span>
+  </a>
+</div>
+
+{% if is_owner %}
+  <div class="stat-grid mb-3">
+    <a class="stat" href="{% url 'reports:sales' %}?period=week">
+      <span class="stat-icon is-info" aria-hidden="true">{% icon "calendar" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">This week</span>
+        <span class="stat-value">{{ m.week.revenue|cedis }}</span>
+        <span class="stat-meta">{{ m.week.count }} sale{{ m.week.count|pluralize }}</span>
+      </span>
+    </a>
+    <a class="stat" href="{% url 'reports:sales' %}?period=month">
+      <span class="stat-icon is-info" aria-hidden="true">{% icon "chart" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">This month</span>
+        <span class="stat-value">{{ m.month.revenue|cedis }}</span>
+        <span class="stat-meta">Est. profit {{ m.month.profit|cedis }}</span>
+      </span>
+    </a>
+    <a class="stat" href="{% url 'reports:inventory' %}">
+      <span class="stat-icon" aria-hidden="true">{% icon "layers" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">Stock value (at cost)</span>
+        <span class="stat-value">{{ m.inventory.cost_value|cedis }}</span>
+        <span class="stat-meta">{{ m.inventory.product_count }} products holding stock</span>
+      </span>
+    </a>
+    <a class="stat" href="{% url 'reports:inventory' %}">
+      <span class="stat-icon is-success" aria-hidden="true">{% icon "tag" 20 %}</span>
+      <span class="stat-body">
+        <span class="stat-label">If it all sells</span>
+        <span class="stat-value">{{ m.inventory.retail_value|cedis }}</span>
+        <span class="stat-meta">{{ m.inventory.potential_profit|cedis }} potential gross profit</span>
+      </span>
+    </a>
+  </div>
+{% endif %}
+
+<div class="row g-3">
+  {# ---------- Needs attention ---------- #}
+  <div class="col-12 col-xl-6">
+    <div class="card h-100 panel-flush">
+      <div class="card-header">
+        <span>Running low</span>
+        <a href="{% url 'catalog:product_list' %}?stock=restock">See all</a>
+      </div>
+      <div class="card-body">
+        {% if m.low_stock %}
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="visually-hidden">Products at or below their low-stock level</caption>
+              <thead>
+                <tr><th scope="col">Product</th><th scope="col" class="text-end">On hand</th>
+                    <th scope="col" class="text-end">Warn below</th><th scope="col"></th></tr>
+              </thead>
+              <tbody>
+                {% for product in m.low_stock %}
+                  <tr>
+                    <td>
+                      <a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                      <div class="cell-sub">{{ product.category.name }}</div>
+                    </td>
+                    <td class="text-end tnum">{{ product.display_stock }}</td>
+                    <td class="text-end tnum text-muted-warm">{{ product.minimum_stock|qty }}</td>
+                    <td class="text-end">{% stock_badge product %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="check" title="Everything is well stocked" body="No product has dropped to its low-stock level." %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ---------- Expiring ---------- #}
+  <div class="col-12 col-xl-6">
+    <div class="card h-100 panel-flush">
+      <div class="card-header">
+        <span>Expiring soon</span>
+        <a href="{% url 'inventory:expiring' %}">See all</a>
+      </div>
+      <div class="card-body">
+        {% if m.expiring %}
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="visually-hidden">Batches approaching their expiry date</caption>
+              <thead>
+                <tr><th scope="col">Product</th><th scope="col">Expires</th>
+                    <th scope="col" class="text-end">Remaining</th></tr>
+              </thead>
+              <tbody>
+                {% for batch in m.expiring %}
+                  <tr>
+                    <td>
+                      <a class="cell-primary" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a>
+                      {% if batch.batch_number %}<div class="cell-sub mono">{{ batch.batch_number }}</div>{% endif %}
+                    </td>
+                    <td>
+                      {{ batch.expiry_date|date:"j M Y" }}
+                      <div class="cell-sub">in {{ batch.days_to_expiry }} day{{ batch.days_to_expiry|pluralize }}</div>
+                    </td>
+                    <td class="text-end tnum">{{ batch.quantity_remaining|qty }} {{ batch.product.unit_label }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="check" title="Nothing expiring soon" body="No batch is within the shop's expiry warning window." %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ---------- Recent sales ---------- #}
+  <div class="col-12 col-xl-6">
+    <div class="card h-100 panel-flush">
+      <div class="card-header">
+        <span>Recent sales</span>
+        <a href="{% url 'sales:history' %}">See all</a>
+      </div>
+      <div class="card-body">
+        {% if m.recent_sales %}
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="visually-hidden">The most recent sales</caption>
+              <thead>
+                <tr><th scope="col">Sale</th><th scope="col">When</th>
+                    <th scope="col">Payment</th><th scope="col" class="text-end">Total</th></tr>
+              </thead>
+              <tbody>
+                {% for sale in m.recent_sales %}
+                  <tr>
+                    <td>
+                      <a class="cell-primary mono" href="{{ sale.get_absolute_url }}">{{ sale.sale_number }}</a>
+                      <div class="cell-sub">{{ sale.line_count }} item{{ sale.line_count|pluralize }}{% if sale.user %} · {{ sale.user.display_name }}{% endif %}</div>
+                    </td>
+                    <td class="cell-sub">{{ sale.completed_at|date:"j M, H:i" }}</td>
+                    <td>{% if sale.is_reversed %}{% sale_status_badge sale %}{% else %}<span class="cell-sub">{{ sale.get_payment_method_display }}</span>{% endif %}</td>
+                    <td class="text-end tnum {% if sale.is_reversed %}text-decoration-line-through text-muted-warm{% endif %}">{{ sale.total|cedis }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="receipt" title="No sales yet" body="Sales you record will appear here." action_url="/sales/new/" action_label="Record a sale" %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ---------- Stock activity ---------- #}
+  <div class="col-12 col-xl-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <span>Latest stock changes</span>
+        <a href="{% url 'inventory:movements' %}">See all</a>
+      </div>
+      <div class="card-body">
+        {% if m.recent_movements %}
+          <div class="timeline">
+            {% for movement in m.recent_movements %}
+              <div class="timeline-item {% if not movement.is_increase %}is-down{% endif %}">
+                <div class="d-flex justify-content-between gap-2">
+                  <div class="min-w-0">
+                    <a class="fw-semibold" href="{{ movement.product.get_absolute_url }}">{{ movement.product.name }}</a>
+                    <div class="t-meta">
+                      {{ movement.get_movement_type_display }}
+                      {% if movement.user %} · {{ movement.user.display_name }}{% endif %}
+                      · {{ movement.created_at|date:"j M, H:i" }}
+                    </div>
+                  </div>
+                  <div class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %} text-end">
+                    {{ movement.signed_quantity }}
+                    <div class="t-meta">now {{ movement.quantity_after|qty }}</div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="history" title="No stock activity yet" body="Receiving stock or recording a sale will show up here." %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if is_owner %}
+    {# ---------- Best sellers ---------- #}
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <span>Best sellers this month</span>
+          <a href="{% url 'reports:products' %}?period=month">Report</a>
+        </div>
+        <div class="card-body">
+          {% if m.best_sellers %}
+            <div class="rank-list">
+              {% for row in m.best_sellers %}
+                <div class="rank-row">
+                  <span class="rank-no">{{ forloop.counter }}</span>
+                  <span class="rank-name">{{ row.product_name }}</span>
+                  <span class="rank-value">{{ row.revenue|cedis }}</span>
+                </div>
+                <div class="meter" role="img"
+                     aria-label="{{ row.product_name }}: {{ row.units|qty }} units sold">
+                  <span style="width: {% widthratio row.revenue m.best_sellers.0.revenue 100 %}%"></span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted-warm mb-0">No sales recorded this month yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ---------- Payment mix ---------- #}
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <span>How customers paid this month</span>
+          <a href="{% url 'reports:payments' %}?period=month">Report</a>
+        </div>
+        <div class="card-body">
+          {% if m.payments %}
+            <div class="rank-list">
+              {% for row in m.payments %}
+                <div class="rank-row">
+                  <span class="rank-no">{{ forloop.counter }}</span>
+                  <span class="rank-name">{{ row.label }}</span>
+                  <span class="rank-value">{{ row.revenue|cedis }}</span>
+                </div>
+                <div class="meter" role="img" aria-label="{{ row.label }}: {{ row.share|floatformat:0 }} percent of revenue across {{ row.count }} sales">
+                  <span style="width: {{ row.share|floatformat:0 }}%"></span>
+                </div>
+                <p class="cell-sub mb-0">{{ row.count }} sale{{ row.count|pluralize }} · {{ row.share|floatformat:0 }}% of revenue</p>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted-warm mb-0">No sales recorded this month yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% if is_owner %}
+  <p class="text-soft mt-3 mb-0" style="font-size: 0.8125rem;">
+    {% icon "info" 13 %} Profit figures are estimates based on what the stock cost. They do not
+    include rent, wages, transport, taxes or other expenses.
+  </p>
+{% endif %}
+{% endblock %}

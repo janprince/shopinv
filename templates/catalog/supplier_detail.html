@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ supplier.name }} · Suppliers{% endblock %}
+{% block page_title %}{{ supplier.name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{{ supplier.name }} {% if not supplier.is_active %}<span class="badge-status badge-muted">Inactive</span>{% endif %}</h1>
+    <p class="lede">{{ supplier.location|default:"No location recorded" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'inventory:receive' %}?supplier={{ supplier.pk }}">{% icon "truck" 16 %} Receive from them</a>
+    <a class="btn btn-outline-primary" href="{% url 'catalog:supplier_edit' supplier.pk %}">{% icon "edit" 16 %} Edit</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header"><span>Contact</span></div>
+      <div class="card-body">
+        <dl class="row mb-0" style="font-size: 0.875rem;">
+          <dt class="col-4 text-muted-warm fw-normal">Phone</dt>
+          <dd class="col-8">{% if supplier.phone %}<a href="tel:{{ supplier.phone }}">{{ supplier.phone }}</a>{% else %}—{% endif %}</dd>
+          <dt class="col-4 text-muted-warm fw-normal">Email</dt>
+          <dd class="col-8">{% if supplier.email %}<a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>{% else %}—{% endif %}</dd>
+          <dt class="col-4 text-muted-warm fw-normal">Deliveries</dt>
+          <dd class="col-8 tnum">{{ totals.deliveries }}</dd>
+          {% if is_owner %}
+            <dt class="col-4 text-muted-warm fw-normal">Total value</dt>
+            <dd class="col-8 tnum">{{ totals.value|cedis }}</dd>
+          {% endif %}
+        </dl>
+        {% if supplier.notes %}
+          <div class="divider"></div>
+          <p class="mb-0" style="font-size: 0.875rem;">{{ supplier.notes|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-8">
+    <div class="card">
+      <div class="card-header"><span>Deliveries received</span></div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">Stock received from {{ supplier.name }}</caption>
+            <thead><tr><th scope="col">Date</th><th scope="col">Product</th><th scope="col">Batch</th>
+                       <th scope="col" class="text-end">Quantity</th>
+                       {% if is_owner %}<th scope="col" class="text-end">Unit cost</th>{% endif %}
+                       <th scope="col">Received by</th></tr></thead>
+            <tbody>
+              {% for batch in batches %}
+                <tr>
+                  <td class="cell-sub">{{ batch.received_at|date:"j M Y" }}</td>
+                  <td><a class="cell-primary" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a></td>
+                  <td class="cell-sub mono">{{ batch.batch_number|default:"—" }}</td>
+                  <td class="text-end tnum">{{ batch.quantity_received|qty }} {{ batch.product.unit_label }}
+                    <div class="cell-sub">{{ batch.quantity_remaining|qty }} left</div></td>
+                  {% if is_owner %}<td class="text-end tnum">{{ batch.unit_cost|cedis }}</td>{% endif %}
+                  <td class="cell-sub">{{ batch.received_by.display_name|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6" class="text-center text-muted-warm py-4">No deliveries recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}My account · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}My account{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>My account</h1>
+    <p class="lede">Signed in as {{ request.user.get_role_display|lower }} · {{ request.user.username }}</p>
+  </div>
+</div>
+
+<form method="post" data-guard-submit novalidate class="mb-4">
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  <div class="card">
+    <div class="card-header"><span>My details</span></div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.first_name %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.last_name %}</div>
+      </div>
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.email %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.phone %}</div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary"><span class="btn-label">Save details</span></button>
+    </div>
+  </div>
+</form>
+
+<form method="post" action="{% url 'accounts:change_password' %}" data-guard-submit novalidate autocomplete="off">
+  {% csrf_token %}
+  {% include "partials/form_errors.html" with form=password_form %}
+  <div class="card">
+    <div class="card-header"><span>Change my password</span></div>
+    <div class="card-body">
+      {% include "partials/field.html" with field=password_form.current_password %}
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=password_form.new_password1 %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=password_form.new_password2 %}</div>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary"><span class="btn-label">Change password</span></button>
+    </div>
+  </div>
+</form>
+{% endblock %}

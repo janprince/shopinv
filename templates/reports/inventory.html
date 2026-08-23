@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Inventory value · Reports{% endblock %}
+{% block page_title %}Inventory value{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Inventory value</h1>
+    <p class="lede">What is on the shelf right now, and what it is worth.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:inventory_export' %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="inventory" %}
+
+<div class="stat-grid mb-3">
+  <div class="stat is-feature">
+  <span class="stat-icon" aria-hidden="true">{% icon "layers" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Value at cost</span>
+    <span class="stat-value">{{ valuation.cost_value|cedis }}</span>
+    <span class="stat-meta">{{ valuation.units|qty }} units across {{ valuation.product_count }} products</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "tag" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Value at selling price</span>
+    <span class="stat-value">{{ valuation.retail_value|cedis }}</span>
+    <span class="stat-meta">If everything sells at today's prices</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Potential gross profit</span>
+    <span class="stat-value">{{ valuation.potential_profit|cedis }}</span>
+    <span class="stat-meta">Difference between the two</span>
+  </span>
+</div>
+  <a class="stat {% if out_of_stock %}is-alert{% endif %}" href="{% url 'catalog:product_list' %}?stock=out">
+  <span class="stat-icon is-danger" aria-hidden="true">{% icon "alert" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Out of stock</span>
+    <span class="stat-value">{{ out_of_stock|length }}</span>
+    <span class="stat-meta">Products with nothing on the shelf</span>
+  </span>
+</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><span>Needs restocking</span>
+    <a href="{% url 'catalog:product_list' %}?stock=restock">Open in products</a></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Products at or below their low-stock level</caption>
+        <thead><tr><th scope="col">Product</th><th scope="col">Category</th>
+                   <th scope="col" class="text-end">On hand</th><th scope="col" class="text-end">Warn below</th>
+                   <th scope="col">Status</th><th scope="col" class="text-end">Action</th></tr></thead>
+        <tbody>
+          {% for product in low_stock %}
+            <tr>
+              <td><a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                <div class="cell-sub mono">{{ product.sku }}</div></td>
+              <td class="cell-sub">{{ product.category.name }}</td>
+              <td class="text-end tnum fw-semibold">{{ product.display_stock }}</td>
+              <td class="text-end tnum text-muted-warm">{{ product.minimum_stock|qty }}</td>
+              <td>{% stock_badge product %}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">Receive</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted-warm py-4">Nothing needs restocking right now.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>Out of stock</span></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Products with no stock</caption>
+        <thead><tr><th scope="col">Product</th><th scope="col">Category</th>
+                   <th scope="col" class="text-end">Selling price</th><th scope="col" class="text-end">Action</th></tr></thead>
+        <tbody>
+          {% for product in out_of_stock %}
+            <tr>
+              <td><a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                <div class="cell-sub mono">{{ product.sku }}</div></td>
+              <td class="cell-sub">{{ product.category.name }}</td>
+              <td class="text-end tnum">{{ product.selling_price|cedis }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">Receive</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-center text-muted-warm py-4">Everything is in stock.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

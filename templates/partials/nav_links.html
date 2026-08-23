@@ -1,0 +1,48 @@
+{% load ui %}
+<div class="nav-section">Daily work</div>
+<a class="nav-item {% nav_active request '/dashboard' %}{% if request.path == '/' %}is-active{% endif %}" href="{% url 'core:dashboard' %}">
+  <span class="icon">{% icon "dashboard" 18 %}</span> Dashboard
+</a>
+<a class="nav-item {% nav_active request '/sales/new' %}" href="{% url 'sales:pos' %}">
+  <span class="icon">{% icon "cart" 18 %}</span> New sale
+</a>
+<a class="nav-item {% nav_active request '/sales/history' '/sales/receipt' %}{% if request.resolver_match.url_name == 'detail' and request.resolver_match.namespace == 'sales' %}is-active{% endif %}" href="{% url 'sales:history' %}">
+  <span class="icon">{% icon "receipt" 18 %}</span> Sales
+</a>
+
+<div class="nav-section">Inventory</div>
+<a class="nav-item {% nav_active request '/catalog/products' %}" href="{% url 'catalog:product_list' %}">
+  <span class="icon">{% icon "box" 18 %}</span> Products
+</a>
+<a class="nav-item {% nav_active request '/stock/receive' %}" href="{% url 'inventory:receive' %}">
+  <span class="icon">{% icon "truck" 18 %}</span> Receive stock
+</a>
+<a class="nav-item {% nav_active request '/stock/adjust' %}" href="{% url 'inventory:adjust' %}">
+  <span class="icon">{% icon "layers" 18 %}</span> Stock adjustments
+</a>
+<a class="nav-item {% nav_active request '/stock/movements' %}" href="{% url 'inventory:movements' %}">
+  <span class="icon">{% icon "history" 18 %}</span> Stock history
+</a>
+<a class="nav-item {% nav_active request '/catalog/suppliers' %}" href="{% url 'catalog:supplier_list' %}">
+  <span class="icon">{% icon "tag" 18 %}</span> Suppliers
+  </a>
+<a class="nav-item {% nav_active request '/catalog/categories' %}" href="{% url 'catalog:category_list' %}">
+  <span class="icon">{% icon "layers" 18 %}</span> Categories
+</a>
+
+<div class="nav-section">Insight</div>
+<a class="nav-item {% nav_active request '/reports' %}" href="{% url 'reports:index' %}">
+  <span class="icon">{% icon "chart" 18 %}</span> Reports
+</a>
+{% if is_owner %}
+  <div class="nav-section">Owner</div>
+  <a class="nav-item {% nav_active request '/accounts/users' %}" href="{% url 'accounts:user_list' %}">
+    <span class="icon">{% icon "users" 18 %}</span> Users
+  </a>
+  <a class="nav-item {% nav_active request '/audit' %}" href="{% url 'core:audit_log' %}">
+    <span class="icon">{% icon "shield" 18 %}</span> Audit history
+  </a>
+  <a class="nav-item {% nav_active request '/settings' %}" href="{% url 'core:settings' %}">
+    <span class="icon">{% icon "settings" 18 %}</span> Shop settings
+  </a>
+{% endif %}

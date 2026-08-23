@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Reverse sale {{ sale.sale_number }}{% endblock %}
+{% block page_title %}Reverse a sale{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Reverse sale {{ sale.sale_number }}</h1>
+    <p class="lede">This puts {{ sale.items.count }} item{{ sale.items.count|pluralize }} back into stock.</p>
+  </div>
+</div>
+
+<div class="alert alert-warning d-flex gap-2" role="alert">
+  <span class="pt-1">{% icon "alert" 16 %}</span>
+  <div>
+    The original sale is never deleted. Reversing it writes new stock movements and marks the
+    sale as reversed, with your reason attached, so the history stays honest.
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><span>What will go back into stock</span></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Items that will return to stock</caption>
+        <thead><tr><th scope="col">Item</th><th scope="col" class="text-end">Quantity</th>
+                   <th scope="col" class="text-end">Value</th></tr></thead>
+        <tbody>
+          {% for item in sale.items.all %}
+            <tr>
+              <td class="cell-primary">{{ item.product_name }}</td>
+              <td class="text-end tnum">{{ item.display_quantity }}</td>
+              <td class="text-end tnum">{{ item.line_total|cedis }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr class="fw-bold"><td colspan="2" class="text-end">Total reversed</td>
+               <td class="text-end tnum">{{ sale.total|cedis }}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form method="post" data-guard-submit novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  {% include "partials/field.html" with field=form.reason %}
+  {% include "partials/field.html" with field=form.confirm %}
+  <div class="form-actions">
+    <a class="btn btn-quiet" href="{{ sale.get_absolute_url }}">Cancel</a>
+    <button type="submit" class="btn btn-danger"><span class="btn-label">Reverse this sale</span></button>
+  </div>
+</form>
+{% endblock %}

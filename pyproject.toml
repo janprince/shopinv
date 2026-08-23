@@ -1,0 +1,37 @@
+[project]
+name = "jcforganic"
+version = "1.0.0"
+description = "Inventory and sales management for a single-location organic shop"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["*/migrations/*", ".venv", "staticfiles"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "DJ", "S", "RUF"]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "S101",    # assert is normal in tests
+    "B008",    # Django call-in-default is idiomatic
+    "RUF012",  # Django class attributes are not ClassVar
+    "DJ001",   # null=True on CharField is deliberate where used
+    "RUF001",  # ×, − and – are deliberate typography in user-facing strings
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["S105", "S106", "S311"]
+"*/management/commands/*" = ["S311"]   # random is for demo data, not security
+"config/settings.py" = ["F405"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+addopts = "--reuse-db -q"

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{{ heading }}</h1>
+    <p class="lede">
+      {% if is_create %}Fields marked with * are required. Everything else can be filled in later.
+      {% else %}Changing prices here does not change what past sales recorded.{% endif %}
+    </p>
+  </div>
+</div>
+
+<form method="post" data-guard-submit novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="form-section">
+        <h2 class="section-title">What is it?</h2>
+        <p class="section-hint">The name your customers and staff would use.</p>
+        {% include "partials/field.html" with field=form.name %}
+        <div class="row">
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.sku %}</div>
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.category %}</div>
+        </div>
+        {% include "partials/field.html" with field=form.description %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">How is it sold?</h2>
+        <p class="section-hint">This decides whether you can sell half of something.</p>
+        {% include "partials/field.html" with field=form.unit %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Prices</h2>
+        <p class="section-hint">Used for profit estimates. Past sales keep the price they were sold at.</p>
+        <div class="row">
+          <div class="col-12 col-sm-6">
+            {% include "partials/field.html" with field=form.cost_price prefix=CURRENCY_SYMBOL %}
+          </div>
+          <div class="col-12 col-sm-6">
+            {% include "partials/field.html" with field=form.selling_price prefix=CURRENCY_SYMBOL %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Stock settings</h2>
+        <p class="section-hint">When should the shop be warned to reorder?</p>
+        {% include "partials/field.html" with field=form.minimum_stock %}
+        {% if is_create %}
+          <div class="row">
+            <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.opening_quantity %}</div>
+            <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.opening_expiry %}</div>
+          </div>
+          <p class="form-text">
+            {% icon "info" 13 %} Opening stock is recorded as a stock movement, exactly like a
+            delivery, so the history explains where every unit came from.
+          </p>
+        {% else %}
+          <div class="alert alert-info d-flex gap-2 mb-0" role="note">
+            <span class="pt-1">{% icon "info" 16 %}</span>
+            <div>
+              Stock on hand is <strong>{{ object.display_stock }}</strong>. It cannot be typed in
+              here — use <a href="{% url 'inventory:receive' %}?product={{ object.pk }}">Receive stock</a> or
+              <a href="{% url 'inventory:adjust' %}?product={{ object.pk }}">Stock adjustments</a> so
+              the reason is always recorded.
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Extra details</h2>
+        <p class="section-hint">Optional, but a barcode makes the till much faster.</p>
+        {% include "partials/field.html" with field=form.barcode %}
+        {% include "partials/field.html" with field=form.is_active %}
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a class="btn btn-quiet" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'catalog:product_list' %}{% endif %}">Cancel</a>
+    <button type="submit" class="btn btn-primary">
+      <span class="btn-label">{% if is_create %}Add product{% else %}Save changes{% endif %}</span>
+    </button>
+    {% if is_create %}
+      <button type="submit" name="save_and_add" value="1" class="btn btn-outline-primary">
+        <span class="btn-label">Save and add another</span>
+      </button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

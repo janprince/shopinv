@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sale {{ sale.sale_number }}{% endblock %}
+{% block page_title %}Sale {{ sale.sale_number }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1 class="mono">{{ sale.sale_number }} {% sale_status_badge sale %}</h1>
+    <p class="lede">
+      {{ sale.completed_at|date:"l j F Y" }} at {{ sale.completed_at|date:"H:i" }}
+      {% if sale.user %} · recorded by {{ sale.user.display_name }}{% endif %}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'sales:receipt' sale.pk %}" target="_blank" rel="noopener">
+      {% icon "printer" 16 %} Receipt
+    </a>
+    {% if is_owner and not sale.is_reversed %}
+      <a class="btn btn-quiet" href="{% url 'sales:reverse' sale.pk %}">{% icon "history" 16 %} Reverse this sale</a>
+    {% endif %}
+    <a class="btn btn-outline-primary" href="{% url 'sales:history' %}">Back to sales</a>
+  </div>
+</div>
+
+{% if sale.is_reversed %}
+  <div class="alert alert-danger d-flex gap-2" role="alert">
+    <span class="pt-1">{% icon "alert" 16 %}</span>
+    <div>
+      <strong>This sale was reversed</strong> on {{ sale.reversed_at|date:"j M Y, H:i" }}
+      by {{ sale.reversed_by.display_name|default:"—" }}. The items went back into stock and this
+      sale no longer counts towards revenue.
+      <div class="mt-1">Reason given: “{{ sale.reversal_reason }}”</div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-lg-7">
+    <div class="card panel-flush mb-3">
+      <div class="card-header"><span>Items</span></div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">Items sold in {{ sale.sale_number }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Item</th><th scope="col" class="text-end">Qty</th>
+                <th scope="col" class="text-end">Unit price</th>
+                {% if is_owner %}<th scope="col" class="text-end">Unit cost</th>{% endif %}
+                <th scope="col" class="text-end">Line total</th>
+                {% if is_owner %}<th scope="col" class="text-end">Est. profit</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in sale.items.all %}
+                <tr>
+                  <td>
+                    <a class="cell-primary" href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
+                    <div class="cell-sub mono">{{ item.sku }}</div>
+                  </td>
+                  <td class="text-end tnum">{{ item.display_quantity }}</td>
+                  <td class="text-end tnum">{{ item.unit_price|cedis }}</td>
+                  {% if is_owner %}<td class="text-end tnum text-muted-warm">{{ item.unit_cost|cedis }}</td>{% endif %}
+                  <td class="text-end tnum fw-semibold">{{ item.line_total|cedis }}</td>
+                  {% if is_owner %}<td class="text-end tnum">{{ item.gross_profit|cedis }}</td>{% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>Stock movements from this sale</span>
+        <a href="{% url 'inventory:movements' %}?q={{ sale.sale_number }}">Open in ledger</a></div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">Stock movements created by this sale</caption>
+            <thead>
+              <tr><th scope="col">When</th><th scope="col">Product</th><th scope="col">Change</th>
+                  <th scope="col" class="text-end">Quantity</th><th scope="col" class="text-end">Stock after</th></tr>
+            </thead>
+            <tbody>
+              {% for movement in movements %}
+                <tr>
+                  <td class="cell-sub">{{ movement.created_at|date:"j M, H:i" }}</td>
+                  <td class="cell-primary">{{ movement.product.name }}
+                    {% if movement.batch %}<div class="cell-sub">{{ movement.batch.display_label }}</div>{% endif %}
+                  </td>
+                  <td>{% movement_badge movement %}</td>
+                  <td class="text-end qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">
+                    {{ movement.signed_quantity }}</td>
+                  <td class="text-end tnum">{{ movement.quantity_after|qty }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header"><span>Payment</span></div>
+      <div class="card-body">
+        <dl class="row mb-0" style="font-size: 0.875rem;">
+          <dt class="col-6 text-muted-warm fw-normal">Subtotal</dt>
+          <dd class="col-6 text-end tnum">{{ sale.subtotal|cedis }}</dd>
+          {% if sale.discount %}
+            <dt class="col-6 text-muted-warm fw-normal">Discount</dt>
+            <dd class="col-6 text-end tnum">−{{ sale.discount|cedis }}</dd>
+          {% endif %}
+          <dt class="col-6 fw-bold pt-2 border-top">Total</dt>
+          <dd class="col-6 text-end tnum fw-bold pt-2 border-top" style="font-size: 1.125rem;">{{ sale.total|cedis }}</dd>
+
+          <dt class="col-6 text-muted-warm fw-normal">Paid by</dt>
+          <dd class="col-6 text-end">{{ sale.get_payment_method_display }}</dd>
+          {% if sale.amount_received %}
+            <dt class="col-6 text-muted-warm fw-normal">Cash received</dt>
+            <dd class="col-6 text-end tnum">{{ sale.amount_received|cedis }}</dd>
+            <dt class="col-6 text-muted-warm fw-normal">Change given</dt>
+            <dd class="col-6 text-end tnum">{{ sale.change_due|cedis }}</dd>
+          {% endif %}
+          {% if sale.payment_reference %}
+            <dt class="col-6 text-muted-warm fw-normal">Reference</dt>
+            <dd class="col-6 text-end mono">{{ sale.payment_reference }}</dd>
+          {% endif %}
+        </dl>
+        {% if sale.notes %}
+          <div class="divider"></div>
+          <p class="cell-sub mb-0">Note: {{ sale.notes }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if is_owner %}
+      <div class="card">
+        <div class="card-header"><span>Profit estimate</span></div>
+        <div class="card-body">
+          <dl class="row mb-0" style="font-size: 0.875rem;">
+            <dt class="col-7 text-muted-warm fw-normal">Revenue</dt>
+            <dd class="col-5 text-end tnum">{{ sale.total|cedis }}</dd>
+            <dt class="col-7 text-muted-warm fw-normal">Cost of goods sold</dt>
+            <dd class="col-5 text-end tnum">{{ sale.cost_total|cedis }}</dd>
+            <dt class="col-7 fw-bold pt-2 border-top">Estimated gross profit</dt>
+            <dd class="col-5 text-end tnum fw-bold pt-2 border-top">{{ sale.gross_profit|cedis }}</dd>
+          </dl>
+          <p class="cell-sub mt-3 mb-0">
+            Costs are what these exact goods cost when they were received, not today's prices.
+            Rent, wages and other expenses are not included.
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

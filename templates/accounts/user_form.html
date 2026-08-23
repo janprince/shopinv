@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{{ heading }}</h1>
+    <p class="lede">
+      {% if is_create %}They will sign in with the username and password you set here.
+      {% else %}Leave the password fields blank to keep their current password.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if editing_self %}
+  <div class="alert alert-info d-flex gap-2" role="note">
+    <span class="pt-1">{% icon "info" 16 %}</span>
+    <div>This is your own account, so the role and on/off switch are locked. It stops an owner
+      accidentally locking themselves out of the shop.</div>
+  </div>
+{% endif %}
+
+<form method="post" data-guard-submit novalidate autocomplete="off">
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+
+  <div class="card"><div class="card-body">
+    <div class="form-section">
+      <h2 class="section-title">Who are they?</h2>
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.first_name %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.last_name %}</div>
+      </div>
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.email %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.phone %}</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 class="section-title">Signing in</h2>
+      {% include "partials/field.html" with field=form.username %}
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.password1 %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.password2 %}</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 class="section-title">Access</h2>
+      {% include "partials/field.html" with field=form.role %}
+      {% include "partials/field.html" with field=form.is_active %}
+    </div>
+  </div></div>
+
+  <div class="form-actions">
+    <a class="btn btn-quiet" href="{% url 'accounts:user_list' %}">Cancel</a>
+    <button type="submit" class="btn btn-primary">
+      <span class="btn-label">{% if is_create %}Create account{% else %}Save changes{% endif %}</span>
+    </button>
+  </div>
+</form>
+{% endblock %}

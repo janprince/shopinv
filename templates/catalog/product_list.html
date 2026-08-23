@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Products · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Products{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Products</h1>
+    <p class="lede">{{ total_count }} product{{ total_count|pluralize }}{% if has_filters %} matching your filters{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'catalog:product_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+    <a class="btn btn-primary" href="{% url 'catalog:product_create' %}">{% icon "plus" 16 %} Add product</a>
+  </div>
+</div>
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-12 col-md-4">
+      <label class="form-label" for="f-q">Search</label>
+      <input type="search" class="form-control" id="f-q" name="q" value="{{ term }}"
+             placeholder="Name, code or barcode" autocomplete="off">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-category">Category</label>
+      <select class="form-select" id="f-category" name="category" data-auto-submit>
+        <option value="">All categories</option>
+        {% for category in categories %}
+          <option value="{{ category.pk }}" {% if request.GET.category == category.pk|stringformat:"s" %}selected{% endif %}>
+            {{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-stock">Stock level</label>
+      <select class="form-select" id="f-stock" name="stock" data-auto-submit>
+        <option value="">All stock levels</option>
+        <option value="in" {% if request.GET.stock == "in" %}selected{% endif %}>In stock</option>
+        <option value="low" {% if request.GET.stock == "low" %}selected{% endif %}>Low stock</option>
+        <option value="out" {% if request.GET.stock == "out" %}selected{% endif %}>Out of stock</option>
+        <option value="restock" {% if request.GET.stock == "restock" %}selected{% endif %}>Needs restocking</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-expiry">Expiry</label>
+      <select class="form-select" id="f-expiry" name="expiry" data-auto-submit>
+        <option value="">Any expiry</option>
+        <option value="expiring" {% if request.GET.expiry == "expiring" %}selected{% endif %}>Expiring soon</option>
+        <option value="expired" {% if request.GET.expiry == "expired" %}selected{% endif %}>Expired</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-status">Show</label>
+      <select class="form-select" id="f-status" name="status" data-auto-submit>
+        <option value="">Active only</option>
+        <option value="all" {% if request.GET.status == "all" %}selected{% endif %}>All products</option>
+        <option value="inactive" {% if request.GET.status == "inactive" %}selected{% endif %}>Inactive only</option>
+      </select>
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-quiet">Search</button>
+      {% if has_filters %}<a class="btn btn-sm btn-link" href="{% url 'catalog:product_list' %}">Clear filters</a>{% endif %}
+    </div>
+  </form>
+</div>
+
+{% if products %}
+  <div class="card table-responsive-cards">
+    <div class="card-body p-0">
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">All products with their stock levels</caption>
+          <thead>
+            <tr>
+              <th scope="col">
+                <a class="sort-link {% if sort == 'name' or sort == '-name' %}is-sorted{% endif %}"
+                   href="{% if sort == 'name' %}{% query_replace sort='-name' %}{% else %}{% query_replace sort='name' %}{% endif %}"
+                   aria-label="Sort by product name">Product</a>
+              </th>
+              <th scope="col">Category</th>
+              <th scope="col" class="text-end">
+                <a class="sort-link {% if sort == 'stock' or sort == '-stock' %}is-sorted{% endif %}"
+                   href="{% if sort == '-stock' %}{% query_replace sort='stock' %}{% else %}{% query_replace sort='-stock' %}{% endif %}"
+                   aria-label="Sort by stock on hand">On hand</a>
+              </th>
+              <th scope="col" class="text-end">Warn below</th>
+              <th scope="col" class="text-end">
+                <a class="sort-link {% if sort == 'price' or sort == '-price' %}is-sorted{% endif %}"
+                   href="{% if sort == '-price' %}{% query_replace sort='price' %}{% else %}{% query_replace sort='-price' %}{% endif %}"
+                   aria-label="Sort by selling price">Price</a>
+              </th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in products %}
+              <tr>
+                <td>
+                  <a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                  <div class="cell-sub mono">{{ product.sku }}</div>
+                </td>
+                <td class="cell-sub">{{ product.category.name }}</td>
+                <td class="text-end tnum fw-semibold">{{ product.display_stock }}</td>
+                <td class="text-end tnum text-muted-warm">{{ product.minimum_stock|qty }}</td>
+                <td class="text-end tnum">{{ product.selling_price|cedis }}</td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    {% stock_badge product %}
+                    {% expiry_badge product.expiry_flag %}
+                    {% active_badge product.is_active %}
+                  </div>
+                </td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">Receive</a>
+                  <a class="btn btn-sm btn-quiet" href="{% url 'catalog:product_edit' product.pk %}">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="data-cards p-2">
+        {% for product in products %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div class="min-w-0">
+                <a class="dc-title" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                <div class="dc-sub"><span class="mono">{{ product.sku }}</span> · {{ product.category.name }}</div>
+              </div>
+              <div class="d-flex flex-column gap-1 align-items-end">
+                {% stock_badge product %}
+                {% expiry_badge product.expiry_flag %}
+                {% active_badge product.is_active %}
+              </div>
+            </div>
+            <dl class="dc-rows">
+              <dt>On hand</dt><dd class="fw-bold">{{ product.display_stock }}</dd>
+              <dt>Warn below</dt><dd>{{ product.minimum_stock|qty }} {{ product.unit_label }}</dd>
+              <dt>Selling price</dt><dd>{{ product.selling_price|cedis }}</dd>
+            </dl>
+            <div class="dc-actions">
+              <a class="btn btn-sm btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">Receive stock</a>
+              <a class="btn btn-sm btn-quiet" href="{% url 'catalog:product_edit' product.pk %}">Edit</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% else %}
+  <div class="card"><div class="card-body">
+    {% if has_filters %}
+      {% include "partials/empty_state.html" with glyph="search" title="No products match those filters" body="Try clearing a filter or searching for something else." action_url="/catalog/products/" action_label="Clear filters" %}
+    {% else %}
+      {% include "partials/empty_state.html" with glyph="box" title="No products yet" body="Add your first product, then record how much of it you have on the shelf." action_url="/catalog/products/new/" action_label="Add your first product" %}
+    {% endif %}
+  </div></div>
+{% endif %}
+{% endblock %}

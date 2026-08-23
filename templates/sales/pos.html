@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static ui %}
+{% block title %}New sale · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}New sale{% endblock %}
+{% block container_class %}page-inner{% endblock %}
+
+{% block topbar_actions %}
+  <span class="cell-sub d-none d-xl-inline">
+    <span class="kbd">/</span> search · <span class="kbd">Enter</span> add first result
+  </span>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="sale-form" novalidate>
+  {% csrf_token %}
+  {{ form.cart.as_hidden }}
+  {{ form.idempotency_key.as_hidden }}
+
+  <div class="pos-layout">
+    {# ================= Left: find products ================= #}
+    <section aria-labelledby="find-heading">
+      <h2 id="find-heading" class="visually-hidden">Find products</h2>
+
+      <div class="pos-search-wrap mb-2">
+        <span class="search-icon">{% icon "search" 18 %}</span>
+        <label class="visually-hidden" for="pos-search">Search products by name, code or barcode</label>
+        <input type="search" id="pos-search" name="q" class="form-control pos-search"
+               placeholder="Search or scan a product…" autocomplete="off"
+               data-autofocus="true" enterkeyhint="search"
+               hx-get="{% url 'sales:product_search' %}"
+               hx-trigger="input changed delay:180ms, search"
+               hx-target="#pos-results" hx-indicator="#search-spinner"
+               aria-describedby="search-hint" aria-controls="pos-results">
+        <span id="search-spinner" class="htmx-indicator position-absolute end-0 top-50 translate-middle-y me-3"
+              role="status" aria-live="polite">
+          <span class="spinner-border spinner-border-sm text-muted-warm" aria-hidden="true"></span>
+          <span class="visually-hidden">Searching</span>
+        </span>
+      </div>
+      <p id="search-hint" class="cell-sub mb-2">
+        Type a name or product code, or scan a barcode. Press <span class="kbd">Enter</span> to add the first match.
+      </p>
+
+      <div id="pos-results" aria-live="polite" aria-busy="false">
+        {% if quick_picks %}
+          <p class="label-caps mb-2">Quick picks</p>
+          <div class="pos-results">
+            {% for product in quick_picks %}
+              <button type="button" class="pos-result" data-add-product
+                      data-id="{{ product.pk }}" data-name="{{ product.name }}"
+                      data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}"
+                      data-unit="{{ product.unit_label }}" data-fractions="{{ product.allows_fractions|yesno:'1,0' }}"
+                      data-step="{{ product.quantity_step }}">
+                <span class="pr-name">{{ product.name }}</span>
+                <span class="pr-meta">
+                  <span class="pr-price">{{ product.selling_price|cedis }}</span>
+                  <span>{{ product.display_stock }} left</span>
+                </span>
+              </button>
+            {% endfor %}
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="box" title="No products with stock yet" body="Add a product and receive some stock to start selling." action_url="/catalog/products/new/" action_label="Add a product" %}
+        {% endif %}
+      </div>
+    </section>
+
+    {# ================= Right: the cart ================= #}
+    <aside class="cart-panel" aria-labelledby="cart-heading">
+      <div class="card panel-flush">
+        <div class="card-header">
+          <span id="cart-heading">This sale <span class="text-muted-warm" id="cart-count">(empty)</span></span>
+          <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" id="clear-cart" hidden>Clear</button>
+        </div>
+
+        <div class="cart-lines" id="cart-lines" role="region" aria-live="polite" aria-label="Items in this sale"></div>
+
+        <div id="cart-empty" class="p-4 text-center">
+          <p class="text-muted-warm mb-0" style="font-size: 0.875rem;">
+            Search for a product on the left, or scan a barcode, to start the sale.
+          </p>
+        </div>
+
+        <div class="cart-totals" id="cart-totals" hidden>
+          <div class="row-line"><span>Items</span><span class="tnum" id="sum-items">0</span></div>
+          <div class="row-line"><span>Subtotal</span><span class="tnum" id="sum-subtotal">{{ CURRENCY_SYMBOL }}0.00</span></div>
+          <div class="row-line" id="discount-line" hidden>
+            <span>Discount</span><span class="tnum" id="sum-discount">−{{ CURRENCY_SYMBOL }}0.00</span>
+          </div>
+          <div class="row-line grand"><span>Total</span><span class="tnum" id="sum-total">{{ CURRENCY_SYMBOL }}0.00</span></div>
+        </div>
+
+        <div class="card-body border-top" id="payment-block" hidden>
+          <fieldset class="mb-3">
+            <legend class="label-caps mb-2">Payment method</legend>
+            <div class="pay-methods">
+              {% for value, label in payment_methods %}
+                <div class="pay-method">
+                  <input type="radio" name="payment_method" id="pay-{{ value }}" value="{{ value }}"
+                         {% if forloop.first %}checked{% endif %} data-method="{{ value }}">
+                  <label for="pay-{{ value }}">
+                    {% if value == "cash" %}{% icon "wallet" 18 %}
+                    {% elif value == "momo" %}{% icon "receipt" 18 %}
+                    {% else %}{% icon "shield" 18 %}{% endif %}
+                    {{ label }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <div id="cash-fields">
+            <label class="form-label" for="id_amount_received">Cash received <span class="opt">optional</span></label>
+            <div class="input-prefix">
+              <span class="prefix">{{ CURRENCY_SYMBOL }}</span>
+              {{ form.amount_received }}
+            </div>
+            <div class="chip-row mt-2" id="quick-cash" aria-label="Quick cash amounts"></div>
+            <div class="change-due mt-2" id="change-block" hidden>
+              <div class="label-caps">Change due</div>
+              <div class="amount" id="change-amount">{{ CURRENCY_SYMBOL }}0.00</div>
+            </div>
+            <p class="field-error mt-2" id="cash-short" hidden>Cash received is less than the total.</p>
+          </div>
+
+          <div id="reference-field" hidden>
+            <label class="form-label" for="id_payment_reference">Reference <span class="opt">optional</span></label>
+            {{ form.payment_reference }}
+          </div>
+
+          <details class="mt-3">
+            <summary class="cell-sub" style="cursor: pointer;">Add a discount or note</summary>
+            <div class="mt-2">
+              <label class="form-label" for="id_discount">Discount on the whole sale</label>
+              <div class="input-prefix">
+                <span class="prefix">{{ CURRENCY_SYMBOL }}</span>
+                {{ form.discount }}
+              </div>
+              <p class="field-error mt-1" id="discount-error" hidden>The discount cannot be more than the subtotal.</p>
+              <div class="mt-2">
+                <label class="form-label" for="{{ form.notes.id_for_label }}">Note</label>
+                {{ form.notes }}
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="card-footer">
+          <button type="submit" class="btn btn-primary btn-lg btn-block" id="complete-btn" disabled>
+            <span class="btn-label">Complete sale · <span id="btn-total">{{ CURRENCY_SYMBOL }}0.00</span></span>
+          </button>
+          <p class="cell-sub text-center mt-2 mb-0" id="offline-note" hidden>
+            You are offline. This sale will not be saved until the connection returns.
+          </p>
+        </div>
+      </div>
+
+      <p class="cell-sub mt-2 mb-0 d-none d-lg-block">
+        Unfinished sales are kept on this device, so a refresh will not lose them.
+      </p>
+    </aside>
+  </div>
+</form>
+
+<button type="button" class="pos-minicart no-print" id="pos-minicart" hidden
+        aria-label="Go to the cart and complete the sale">
+  <span>
+    <span class="mc-count" id="mc-count">0 items</span>
+    <span class="mc-total d-block" id="mc-total">{{ CURRENCY_SYMBOL }}0.00</span>
+  </span>
+  <span class="mc-go">Review sale {% icon "arrow-right" 15 %}</span>
+</button>
+
+{# The cart the server received back after a failed submission, so nothing is lost. #}
+<script id="initial-cart" type="application/json">{{ cart_json|safe }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pos.js' %}" defer></script>
+{% endblock %}

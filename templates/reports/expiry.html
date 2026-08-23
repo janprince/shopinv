@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Expiry report · Reports{% endblock %}
+{% block page_title %}Expiring &amp; expired stock{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Expiring &amp; expired stock</h1>
+    <p class="lede">Batches past their date, or within {{ warning_days }} days of it.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:expiry_export' %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="expiry" %}
+
+{% if expired %}
+  <div class="card mb-3">
+    <div class="card-header"><span>Expired — {{ expired|length }} batch{{ expired|length|pluralize:"es" }}</span></div>
+    <div class="card-body p-0">
+      {% include "inventory/partials/expiry_table.html" with batches=expired state="expired" %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><span>Expiring within {{ warning_days }} days</span></div>
+  <div class="card-body p-0">
+    {% if expiring %}
+      {% include "inventory/partials/expiry_table.html" with batches=expiring state="expiring" %}
+    {% else %}
+      {% include "partials/empty_state.html" with glyph="check" title="Nothing expiring soon" body="No batch reaches its expiry date within the warning window." %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

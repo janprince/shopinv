@@ -1,0 +1,60 @@
+{% load ui %}
+{% if exact_barcode %}
+  <p class="label-caps mb-2">Barcode match</p>
+  <div class="pos-results mb-3">
+    <button type="button" class="pos-result is-focused" data-add-product data-autoadd
+            data-id="{{ exact_barcode.pk }}" data-name="{{ exact_barcode.name }}"
+            data-price="{{ exact_barcode.selling_price }}" data-stock="{{ exact_barcode.stock_quantity }}"
+            data-unit="{{ exact_barcode.unit_label }}" data-fractions="{{ exact_barcode.allows_fractions|yesno:'1,0' }}"
+            data-step="{{ exact_barcode.quantity_step }}"
+            {% if exact_barcode.stock_quantity <= 0 %}disabled{% endif %}>
+      <span class="pr-name">{{ exact_barcode.name }}</span>
+      <span class="pr-meta">
+        <span class="pr-price">{{ exact_barcode.selling_price|cedis }}</span>
+        <span>{{ exact_barcode.display_stock }} left</span>
+      </span>
+    </button>
+  </div>
+{% endif %}
+
+{% if products %}
+  <p class="label-caps mb-2">
+    {% if term %}{{ products|length }} match{{ products|length|pluralize:"es" }} for “{{ term }}”{% else %}Products{% endif %}
+  </p>
+  <div class="pos-results">
+    {% for product in products %}
+      <button type="button" class="pos-result" data-add-product
+              data-id="{{ product.pk }}" data-name="{{ product.name }}"
+              data-price="{{ product.selling_price }}" data-stock="{{ product.stock_quantity }}"
+              data-unit="{{ product.unit_label }}" data-fractions="{{ product.allows_fractions|yesno:'1,0' }}"
+              data-step="{{ product.quantity_step }}"
+              {% if product.stock_quantity <= 0 %}disabled{% endif %}>
+        <span class="pr-name">{{ product.name }}</span>
+        <span class="pr-meta">
+          <span class="pr-price">{{ product.selling_price|cedis }}</span>
+          {% if product.stock_quantity <= 0 %}
+            <span class="badge-status badge-out">Out of stock</span>
+          {% elif product.stock_quantity <= product.minimum_stock %}
+            <span>{{ product.display_stock }} left</span>
+            <span class="badge-status badge-low">Low</span>
+          {% else %}
+            <span>{{ product.display_stock }} left</span>
+          {% endif %}
+        </span>
+        <span class="pr-meta mono">{{ product.sku }}</span>
+      </button>
+    {% endfor %}
+  </div>
+  {% if truncated %}
+    <p class="cell-sub mt-2 mb-0">Showing the first {{ products|length }} matches. Keep typing to narrow it down.</p>
+  {% endif %}
+{% elif term %}
+  <div class="empty-state">
+    <div class="glyph">{% icon "search" 26 %}</div>
+    <h3>Nothing matches “{{ term }}”</h3>
+    <p>Check the spelling, or the product may not have been added yet.</p>
+    <a class="btn btn-quiet" href="{% url 'catalog:product_create' %}" target="_blank" rel="noopener">
+      {% icon "plus" 16 %} Add a new product
+    </a>
+  </div>
+{% endif %}

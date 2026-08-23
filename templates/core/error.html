@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="empty-state">
+      <div class="glyph">{% icon "alert" 26 %}</div>
+      <p class="label-caps">Error {{ code }}</p>
+      <h3>{{ title }}</h3>
+      <p>{{ body }}</p>
+      <div class="d-flex gap-2 justify-content-center flex-wrap">
+        <a class="btn btn-primary" href="{% url 'core:dashboard' %}">Go to the dashboard</a>
+        <button type="button" class="btn btn-quiet" onclick="history.back()">Go back</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block anon_content %}
+<div style="min-height: 100vh; display: grid; place-items: center; padding: 2rem 1rem;">
+  <div class="card" style="max-width: 460px; width: 100%;">
+    <div class="card-body">
+      <div class="empty-state">
+        <div class="glyph">{% icon "alert" 26 %}</div>
+        <p class="label-caps">Error {{ code }}</p>
+        <h3>{{ title }}</h3>
+        <p>{{ body }}</p>
+        <a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

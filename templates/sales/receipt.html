@@ -1,0 +1,95 @@
+{% load ui %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt {{ sale.sale_number }}</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; padding: 1rem; background: #f4f0e7; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #000; }
+    .sheet { background: #fff; max-width: 320px; margin: 0 auto; padding: 14px 16px; border-radius: 8px; }
+    .c { text-align: center; }
+    .r { text-align: right; }
+    .shop { font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+    .muted { color: #444; font-size: 11px; }
+    hr { border: 0; border-top: 1px dashed #999; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    td { padding: 2px 0; vertical-align: top; }
+    .tot { font-weight: 700; font-size: 13px; }
+    .toolbar { max-width: 320px; margin: 12px auto 0; display: flex; gap: 8px; }
+    .toolbar a, .toolbar button {
+      flex: 1; text-align: center; padding: 10px; border-radius: 6px; border: 1px solid #cfc7b6;
+      background: #fff; color: #23201c; font-family: system-ui, sans-serif; font-size: 14px;
+      font-weight: 600; text-decoration: none; cursor: pointer; min-height: 44px;
+    }
+    .toolbar .primary { background: #1f5136; border-color: #1f5136; color: #fff; }
+    .void { text-align: center; border: 2px solid #b23b30; color: #b23b30; padding: 4px; font-weight: 700; margin: 8px 0; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .sheet { max-width: 100%; padding: 0; border-radius: 0; }
+      .toolbar { display: none; }
+      @page { margin: 6mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="c">
+      <div class="shop">{{ shop.shop_name|upper }}</div>
+      {% if shop.address %}<div class="muted">{{ shop.address|linebreaksbr }}</div>{% endif %}
+      {% if shop.phone %}<div class="muted">Tel {{ shop.phone }}</div>{% endif %}
+    </div>
+    <hr>
+
+    {% if sale.is_reversed %}<div class="void">REVERSED — NOT A VALID SALE</div>{% endif %}
+
+    <table>
+      <tr><td>Receipt</td><td class="r">{{ sale.sale_number }}</td></tr>
+      <tr><td>Date</td><td class="r">{{ sale.completed_at|date:"d/m/Y H:i" }}</td></tr>
+      <tr><td>Served by</td><td class="r">{{ sale.user.display_name|default:"—" }}</td></tr>
+    </table>
+    <hr>
+
+    <table>
+      {% for item in sale.items.all %}
+        <tr><td colspan="2">{{ item.product_name }}</td></tr>
+        <tr>
+          <td class="muted">{{ item.display_quantity }} × {{ item.unit_price|cedis_plain }}</td>
+          <td class="r">{{ item.line_total|cedis_plain }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+    <hr>
+
+    <table>
+      {% if sale.discount %}
+        <tr><td>Subtotal</td><td class="r">{{ sale.subtotal|cedis_plain }}</td></tr>
+        <tr><td>Discount</td><td class="r">-{{ sale.discount|cedis_plain }}</td></tr>
+      {% endif %}
+      <tr class="tot"><td>TOTAL ({{ CURRENCY_SYMBOL }})</td><td class="r">{{ sale.total|cedis_plain }}</td></tr>
+      <tr><td>Paid by</td><td class="r">{{ sale.get_payment_method_display }}</td></tr>
+      {% if sale.amount_received %}
+        <tr><td>Cash</td><td class="r">{{ sale.amount_received|cedis_plain }}</td></tr>
+        <tr><td>Change</td><td class="r">{{ sale.change_due|cedis_plain }}</td></tr>
+      {% endif %}
+      {% if sale.payment_reference %}
+        <tr><td>Reference</td><td class="r">{{ sale.payment_reference }}</td></tr>
+      {% endif %}
+    </table>
+    <hr>
+
+    <div class="c muted">
+      {{ shop.receipt_footer }}<br>
+      {% if shop.email %}{{ shop.email }}<br>{% endif %}
+      Goods sold are checked at the counter.
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button type="button" class="primary" onclick="window.print()">Print</button>
+    <a href="{{ sale.get_absolute_url }}">Back to sale</a>
+  </div>
+
+  {% if auto_print %}<script>window.addEventListener("load", function () { window.print(); });</script>{% endif %}
+</body>
+</html>

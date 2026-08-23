@@ -1,0 +1,18 @@
+{% load ui %}
+<nav class="tabbar no-print" aria-label="Quick navigation">
+  <a href="{% url 'core:dashboard' %}" class="{% if request.path == '/' or '/dashboard' in request.path %}is-active{% endif %}">
+    <span class="icon">{% icon "dashboard" 20 %}</span> Home
+  </a>
+  <a href="{% url 'catalog:product_list' %}" class="{% nav_active request '/catalog/products' %}">
+    <span class="icon">{% icon "box" 20 %}</span> Products
+  </a>
+  <a href="{% url 'sales:pos' %}" class="tab-sell {% nav_active request '/sales/new' %}">
+    <span class="icon">{% icon "cart" 20 %}</span> Sell
+  </a>
+  <a href="{% url 'sales:history' %}" class="{% nav_active request '/sales/history' %}">
+    <span class="icon">{% icon "receipt" 20 %}</span> Sales
+  </a>
+  <a href="{% url 'reports:index' %}" class="{% nav_active request '/reports' %}">
+    <span class="icon">{% icon "chart" 20 %}</span> Reports
+  </a>
+</nav>

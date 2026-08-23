@@ -1,0 +1,61 @@
+{% load static ui %}<!doctype html>
+<html lang="en" data-role="{% if request.user.is_authenticated %}{{ request.user.role }}{% else %}guest{% endif %}"
+      data-sw="{% if DEBUG %}off{% else %}on{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f5136">
+  <meta name="description" content="Inventory and sales for {{ shop.shop_name|default:'the shop' }}.">
+  <title>{% block title %}{{ shop.shop_name|default:"JCF Organic" }}{% endblock %}</title>
+
+  <link rel="manifest" href="{% url 'core:manifest' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+{% if request.user.is_authenticated %}
+<div class="app-shell">
+  {% include "partials/sidebar.html" %}
+  {% include "partials/mobile_bar.html" %}
+
+  <div class="app-main">
+    <header class="topbar no-print">
+      <h1>{% block page_title %}{% endblock %}</h1>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+
+    <main id="main-content" class="page" tabindex="-1">
+      <div class="{% block container_class %}page-inner{% endblock %}">
+        {% include "partials/messages.html" %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  {% include "partials/tabbar.html" %}
+</div>
+{% else %}
+  <main id="main-content" tabindex="-1">
+    {% include "partials/messages.html" %}
+    {% block anon_content %}{% endblock %}
+  </main>
+{% endif %}
+
+<div id="connection-banner" class="conn-banner no-print" role="status" aria-live="polite" hidden>
+  {% icon "wifi-off" 16 %}<span id="connection-text">No internet connection</span>
+</div>
+
+<script src="{% static 'vendor/bootstrap.bundle.min.js' %}" defer></script>
+<script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+<script src="{% static 'js/app.js' %}" defer></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

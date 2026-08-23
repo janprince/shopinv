@@ -1,0 +1,45 @@
+# Local development. One command from a clean machine:
+#   docker compose up --build
+#
+# Then, in another terminal:
+#   docker compose exec web python manage.py create_owner
+#   docker compose exec web python manage.py seed_demo
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jcforganic
+      POSTGRES_USER: jcf
+      POSTGRES_PASSWORD: jcf
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"          # 5433 on the host, so a local PostgreSQL still works
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jcf -d jcforganic"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0"
+      DATABASE_URL: "postgres://jcf:jcf@db:5432/jcforganic"
+      DJANGO_TIME_ZONE: "Africa/Accra"
+      CURRENCY_SYMBOL: "GH₵"
+    volumes:
+      - .:/app                # live reload while developing
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

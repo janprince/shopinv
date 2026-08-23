@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="JCF Organic">
+  <rect width="64" height="64" rx="15" fill="#17402b"/>
+  <path d="M14 50c0-21 14-35 37-35 0 23-12 35-26 35a11 11 0 0 1-11-11z" fill="none"
+        stroke="#8fd1a6" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M27 42 44 25" fill="none" stroke="#8fd1a6" stroke-width="4" stroke-linecap="round"/>
+</svg>

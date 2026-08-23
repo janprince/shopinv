@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Audit history · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Audit history{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Audit history</h1>
+    <p class="lede">Who did what, and when. These records can never be edited or deleted.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'core:audit_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "partials/period_filter.html" %}
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <input type="hidden" name="from" value="{{ start|date:'Y-m-d' }}">
+    <input type="hidden" name="to" value="{{ end|date:'Y-m-d' }}">
+    <div class="col-12 col-md-4">
+      <label class="form-label" for="f-q">Search</label>
+      <input type="search" class="form-control" id="f-q" name="q" value="{{ term }}" placeholder="What happened…">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="f-action">Action</label>
+      <select class="form-select" id="f-action" name="action" data-auto-submit>
+        <option value="">All actions</option>
+        {% for value, label in actions %}
+          <option value="{{ value }}" {% if request.GET.action == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="f-actor">Who</label>
+      <select class="form-select" id="f-actor" name="actor" data-auto-submit>
+        <option value="">Everyone</option>
+        {% for person in staff %}
+          <option value="{{ person.pk }}" {% if request.GET.actor == person.pk|stringformat:"s" %}selected{% endif %}>
+            {{ person.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2"><button type="submit" class="btn btn-quiet btn-block">Search</button></div>
+  </form>
+</div>
+
+{% if events %}
+  <div class="card table-responsive-cards">
+    <div class="card-body p-0">
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Recorded actions</caption>
+          <thead><tr><th scope="col">When</th><th scope="col">Who</th><th scope="col">Action</th>
+                     <th scope="col">What happened</th><th scope="col">Details</th></tr></thead>
+          <tbody>
+            {% for event in events %}
+              <tr>
+                <td class="cell-sub">{{ event.created_at|date:"j M Y" }}<div>{{ event.created_at|date:"H:i:s" }}</div></td>
+                <td class="cell-primary">{{ event.actor_label|default:"System" }}</td>
+                <td><span class="badge-status badge-muted badge-square">{{ event.get_action_display }}</span></td>
+                <td>{{ event.summary }}</td>
+                <td>
+                  {% if event.details %}
+                    <details>
+                      <summary class="cell-sub" style="cursor: pointer;">Show</summary>
+                      <pre class="mono mt-1 mb-0 p-2 rounded" style="background: var(--paper-sunk); font-size: 0.6875rem; white-space: pre-wrap; word-break: break-word;">{{ event.details|pprint }}</pre>
+                    </details>
+                  {% else %}<span class="text-soft">—</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="data-cards p-2">
+        {% for event in events %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div><span class="dc-title">{{ event.summary }}</span>
+                <div class="dc-sub">{{ event.created_at|date:"j M Y, H:i" }} · {{ event.actor_label|default:"System" }}</div></div>
+            </div>
+            <span class="badge-status badge-muted badge-square">{{ event.get_action_display }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% else %}
+  <div class="card"><div class="card-body">
+    {% include "partials/empty_state.html" with glyph="shield" title="Nothing recorded in this period" body="Try a wider date range or clear the filters." %}
+  </div></div>
+{% endif %}
+{% endblock %}

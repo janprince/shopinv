@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Estimated gross profit · Reports{% endblock %}
+{% block page_title %}Estimated gross profit{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Estimated gross profit</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:profit_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="profit" %}
+{% include "partials/period_filter.html" %}
+
+<div class="alert alert-info d-flex gap-2" role="note">
+  <span class="pt-1">{% icon "info" 16 %}</span>
+  <div>
+    <strong>This is an estimate, not accounting profit.</strong> It is revenue minus what the goods
+    themselves cost when they were received. It does not include rent, wages, transport, electricity,
+    taxes or any other expense.
+  </div>
+</div>
+
+<div class="stat-grid mb-3">
+  <div class="stat">
+  <span class="stat-icon" aria-hidden="true">{% icon "wallet" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Revenue</span>
+    <span class="stat-value">{{ summary.revenue|cedis }}</span>
+    <span class="stat-meta">{{ summary.count }} sale{{ summary.count|pluralize }}</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "truck" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Cost of goods sold</span>
+    <span class="stat-value">{{ summary.cost|cedis }}</span>
+    <span class="stat-meta">From the batches actually sold</span>
+  </span>
+</div>
+  <div class="stat is-feature">
+  <span class="stat-icon" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Estimated gross profit</span>
+    <span class="stat-value">{{ summary.profit|cedis }}</span>
+    <span class="stat-meta">{% if summary.margin_percent %}{{ summary.margin_percent|floatformat:1 }}% margin{% else %}—{% endif %}</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-warning" aria-hidden="true">{% icon "alert" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">After stock written off</span>
+    <span class="stat-value">{{ after_losses|cedis }}</span>
+    <span class="stat-meta">{{ losses|cedis }} of stock damaged, expired or missing</span>
+  </span>
+</div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    <div class="card h-100">
+      <div class="card-header"><span>Most profitable products</span></div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">Products ranked by estimated gross profit</caption>
+            <thead><tr><th scope="col">Product</th><th scope="col" class="text-end">Units</th>
+                       <th scope="col" class="text-end">Revenue</th><th scope="col" class="text-end">Cost</th>
+                       <th scope="col" class="text-end">Est. profit</th><th scope="col" class="text-end">Margin</th></tr></thead>
+            <tbody>
+              {% for row in by_product %}
+                <tr>
+                  <td><a class="cell-primary" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
+                    <div class="cell-sub mono">{{ row.sku }}</div></td>
+                  <td class="text-end tnum">{{ row.units|qty }}</td>
+                  <td class="text-end tnum">{{ row.revenue|cedis }}</td>
+                  <td class="text-end tnum text-muted-warm">{{ row.cost|cedis }}</td>
+                  <td class="text-end tnum fw-semibold">{{ row.profit|cedis }}</td>
+                  <td class="text-end tnum cell-sub">{{ row.profit|percent_of:row.revenue|floatformat:0 }}%</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="6" class="text-center text-muted-warm py-4">No sales in this period.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <div class="card h-100">
+      <div class="card-header"><span>Profit by category</span></div>
+      <div class="card-body">
+        {% if by_category %}
+          <div class="rank-list">
+            {% for row in by_category %}
+              <div class="rank-row">
+                <span class="rank-no">{{ forloop.counter }}</span>
+                <span class="rank-name">{{ row.product__category__name|default:"Uncategorised" }}</span>
+                <span class="rank-value">{{ row.profit|cedis }}</span>
+              </div>
+              <div class="meter" role="img" aria-label="{{ row.profit|cedis }} estimated gross profit">
+                <span style="width: {% if by_category.0.profit %}{% widthratio row.profit by_category.0.profit 100 %}{% else %}0{% endif %}%"></span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted-warm mb-0">No sales in this period.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

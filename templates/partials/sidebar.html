@@ -1,0 +1,36 @@
+{% load ui %}
+<nav class="sidebar no-print" aria-label="Main navigation">
+  <a class="brand" href="{% url 'core:dashboard' %}">
+    <span class="brand-mark">{% icon "leaf" 20 %}</span>
+    <span class="min-w-0">
+      <span class="brand-name d-block truncate">{{ shop.shop_name }}</span>
+      <span class="brand-sub">Shop manager</span>
+    </span>
+  </a>
+
+  <div class="sidebar-cta">
+    <a class="btn btn-primary" href="{% url 'sales:pos' %}">{% icon "cart" 16 %}<span>New sale</span></a>
+  </div>
+
+  <div class="sidebar-nav">
+    {% include "partials/nav_links.html" %}
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="d-flex align-items-center gap-1">
+      <a class="user-chip flex-grow-1" href="{% url 'accounts:profile' %}">
+        <span class="avatar" aria-hidden="true">{{ request.user.initials }}</span>
+        <span class="min-w-0">
+          <span class="name d-block truncate">{{ request.user.display_name }}</span>
+          <span class="role">{{ request.user.get_role_display }}</span>
+        </span>
+      </a>
+      <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+        {% csrf_token %}
+        <button class="btn btn-quiet btn-icon btn-sm" type="submit" title="Sign out" aria-label="Sign out">
+          {% icon "logout" 16 %}
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>

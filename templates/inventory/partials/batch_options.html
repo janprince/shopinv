@@ -1,0 +1,7 @@
+{% load ui %}
+<option value="">Let the system choose (oldest expiry first)</option>
+{% for batch in batches %}
+  <option value="{{ batch.pk }}">
+    {{ batch.display_label }} — {{ batch.quantity_remaining|qty }} left
+  </option>
+{% endfor %}

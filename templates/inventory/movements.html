@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Stock history · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Stock history{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Stock history</h1>
+    <p class="lede">Every single change to stock, and why it happened. {{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'inventory:movements_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+    <a class="btn btn-primary" href="{% url 'inventory:adjust' %}">{% icon "layers" 16 %} Record a change</a>
+  </div>
+</div>
+
+{% include "partials/period_filter.html" %}
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <input type="hidden" name="from" value="{{ start|date:'Y-m-d' }}">
+    <input type="hidden" name="to" value="{{ end|date:'Y-m-d' }}">
+    <div class="col-12 col-md-3">
+      <label class="form-label" for="f-q">Search</label>
+      <input type="search" class="form-control" id="f-q" name="q" value="{{ term }}" placeholder="Product, reason or sale number">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="{{ filters.product.id_for_label }}">Product</label>
+      {{ filters.product }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="{{ filters.category.id_for_label }}">Category</label>
+      {{ filters.category }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="{{ filters.movement_type.id_for_label }}">Change type</label>
+      {{ filters.movement_type }}
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="{{ filters.supplier.id_for_label }}">Supplier</label>
+      {{ filters.supplier }}
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" for="f-user">Recorded by</label>
+      <select class="form-select" id="f-user" name="user" data-auto-submit>
+        <option value="">Everyone</option>
+        {% for person in staff %}
+          <option value="{{ person.pk }}" {% if selected_user == person.pk|stringformat:"s" %}selected{% endif %}>
+            {{ person.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-quiet btn-block">Apply</button>
+    </div>
+    <div class="col-12">
+      <a class="btn btn-sm btn-link p-0" href="{% url 'inventory:movements' %}">Clear all filters</a>
+    </div>
+  </form>
+</div>
+
+{% if movements %}
+  <div class="card table-responsive-cards">
+    <div class="card-body p-0">
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Stock movement ledger</caption>
+          <thead>
+            <tr>
+              <th scope="col">When</th><th scope="col">Product</th><th scope="col">What happened</th>
+              <th scope="col" class="text-end">Change</th><th scope="col" class="text-end">Before → after</th>
+              <th scope="col">Reason / link</th><th scope="col">Who</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for movement in movements %}
+              <tr>
+                <td class="cell-sub">{{ movement.created_at|date:"j M Y" }}<div>{{ movement.created_at|date:"H:i" }}</div></td>
+                <td>
+                  <a class="cell-primary" href="{{ movement.product.get_absolute_url }}">{{ movement.product.name }}</a>
+                  <div class="cell-sub mono">{{ movement.product.sku }}</div>
+                </td>
+                <td>
+{% movement_badge movement %}
+                </td>
+                <td class="text-end">
+                  <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">
+                    {{ movement.signed_quantity }}
+                  </span>
+                  <div class="cell-sub">{{ movement.direction_label }}</div>
+                </td>
+                <td class="text-end tnum cell-sub">{{ movement.quantity_before|qty }} → <strong>{{ movement.quantity_after|qty }}</strong></td>
+                <td class="cell-sub">
+                  {{ movement.reason|default:"—" }}
+                  {% if movement.sale_id %}
+                    <div><a class="mono" href="{{ movement.sale.get_absolute_url }}">{{ movement.sale.sale_number }}</a></div>
+                  {% elif movement.batch_id and movement.batch.batch_number %}
+                    <div class="mono">{{ movement.batch.batch_number }}</div>
+                  {% endif %}
+                </td>
+                <td class="cell-sub">{{ movement.user.display_name|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="data-cards p-2">
+        {% for movement in movements %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div class="min-w-0">
+                <a class="dc-title" href="{{ movement.product.get_absolute_url }}">{{ movement.product.name }}</a>
+                <div class="dc-sub">{{ movement.created_at|date:"j M Y, H:i" }}</div>
+              </div>
+              <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">
+                {{ movement.signed_quantity }}
+              </span>
+            </div>
+            <dl class="dc-rows">
+              <dt>What happened</dt><dd>{{ movement.get_movement_type_display }}</dd>
+              <dt>Direction</dt><dd>{{ movement.direction_label }}</dd>
+              <dt>Stock after</dt><dd>{{ movement.quantity_after|qty }}</dd>
+              {% if movement.reason %}<dt>Reason</dt><dd class="text-start">{{ movement.reason }}</dd>{% endif %}
+              <dt>Who</dt><dd>{{ movement.user.display_name|default:"—" }}</dd>
+            </dl>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% else %}
+  <div class="card"><div class="card-body">
+    {% include "partials/empty_state.html" with glyph="history" title="No stock changes in this period" body="Try widening the date range or clearing the filters." %}
+  </div></div>
+{% endif %}
+{% endblock %}

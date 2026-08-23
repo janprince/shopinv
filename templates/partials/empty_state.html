@@ -1,0 +1,9 @@
+{% load ui %}
+<div class="empty-state">
+  <div class="glyph">{% icon glyph|default:"box" 26 %}</div>
+  <h3>{{ title }}</h3>
+  {% if body %}<p>{{ body }}</p>{% endif %}
+  {% if action_url %}
+    <a class="btn btn-primary" href="{{ action_url }}">{% icon "plus" 16 %}{{ action_label }}</a>
+  {% endif %}
+</div>

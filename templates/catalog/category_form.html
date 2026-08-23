@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ heading }}{% endblock %}
+{% block page_title %}{{ heading }}{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head"><div class="title-block"><h1>{{ heading }}</h1></div></div>
+
+<form method="post" data-guard-submit novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+  <div class="card"><div class="card-body">
+    {% include "partials/field.html" with field=form.name %}
+    {% include "partials/field.html" with field=form.description %}
+    {% include "partials/field.html" with field=form.is_active %}
+  </div></div>
+  <div class="form-actions">
+    <a class="btn btn-quiet" href="{% url 'catalog:category_list' %}">Cancel</a>
+    <button type="submit" class="btn btn-primary"><span class="btn-label">Save category</span></button>
+  </div>
+</form>
+{% endblock %}

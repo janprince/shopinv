@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Suppliers · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Suppliers</h1>
+    <p class="lede">Who you buy from, and what they have delivered.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="{% url 'catalog:supplier_create' %}">{% icon "plus" 16 %} Add supplier</a>
+  </div>
+</div>
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="f-q">Search</label>
+      <input type="search" class="form-control" id="f-q" name="q" value="{{ term }}" placeholder="Name, phone or location">
+    </div>
+    <div class="col-12 col-md-auto"><button type="submit" class="btn btn-quiet btn-block">Search</button></div>
+  </form>
+</div>
+
+<div class="card table-responsive-cards">
+  <div class="card-body p-0">
+    {% if suppliers %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Suppliers</caption>
+          <thead><tr><th scope="col">Supplier</th><th scope="col">Phone</th><th scope="col">Location</th>
+                     <th scope="col" class="text-end">Deliveries</th><th scope="col">Status</th>
+                     <th scope="col" class="text-end">Actions</th></tr></thead>
+          <tbody>
+            {% for supplier in suppliers %}
+              <tr>
+                <td><a class="cell-primary" href="{{ supplier.get_absolute_url }}">{{ supplier.name }}</a>
+                  {% if supplier.email %}<div class="cell-sub">{{ supplier.email }}</div>{% endif %}</td>
+                <td class="cell-sub">{% if supplier.phone %}<a href="tel:{{ supplier.phone }}">{{ supplier.phone }}</a>{% else %}—{% endif %}</td>
+                <td class="cell-sub">{{ supplier.location|default:"—" }}</td>
+                <td class="text-end tnum">{{ supplier.delivery_count }}</td>
+                <td>{% if supplier.is_active %}<span class="badge-status badge-in">Active</span>
+                    {% else %}<span class="badge-status badge-muted">Inactive</span>{% endif %}</td>
+                <td class="text-end"><a class="btn btn-sm btn-quiet" href="{% url 'catalog:supplier_edit' supplier.pk %}">Edit</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="data-cards p-2">
+        {% for supplier in suppliers %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div><a class="dc-title" href="{{ supplier.get_absolute_url }}">{{ supplier.name }}</a>
+                <div class="dc-sub">{{ supplier.location|default:"No location recorded" }}</div></div>
+              {% if not supplier.is_active %}<span class="badge-status badge-muted">Inactive</span>{% endif %}
+            </div>
+            <dl class="dc-rows">
+              <dt>Phone</dt><dd>{{ supplier.phone|default:"—" }}</dd>
+              <dt>Deliveries</dt><dd>{{ supplier.delivery_count }}</dd>
+            </dl>
+            <div class="dc-actions">
+              <a class="btn btn-sm btn-quiet" href="{{ supplier.get_absolute_url }}">Details</a>
+              <a class="btn btn-sm btn-quiet" href="{% url 'catalog:supplier_edit' supplier.pk %}">Edit</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "partials/empty_state.html" with glyph="truck" title="No suppliers yet" body="Adding suppliers lets you see where each delivery came from." action_url="/catalog/suppliers/new/" action_label="Add a supplier" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% load ui %}
+{% if messages %}
+  <div class="messages-stack no-print mb-3" role="region" aria-label="Notifications">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} d-flex align-items-start gap-2 mb-2"
+           role="{% if message.level >= 40 %}alert{% else %}status{% endif %}">
+        <span class="pt-1">
+          {% if message.level >= 40 %}{% icon "alert" 16 %}
+          {% elif message.level == 25 %}{% icon "check" 16 %}
+          {% else %}{% icon "info" 16 %}{% endif %}
+        </span>
+        <div class="flex-grow-1">{{ message }}</div>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="Dismiss"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

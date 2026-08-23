@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Reports · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Reports</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="index" %}
+{% include "partials/period_filter.html" %}
+
+<div class="stat-grid mb-3">
+  <a class="stat is-feature" href="{% url 'reports:sales' %}{% query_replace %}">
+  <span class="stat-icon" aria-hidden="true">{% icon "wallet" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Revenue in this period</span>
+    <span class="stat-value">{{ summary.revenue|cedis }}</span>
+    <span class="stat-meta">{{ summary.count }} sale{{ summary.count|pluralize }} · avg {{ summary.average_sale|cedis }}</span>
+  </span>
+</a>
+  <a class="stat" href="{% url 'reports:products' %}{% query_replace %}">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "box" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Items sold</span>
+    <span class="stat-value">{{ summary.units|qty }}</span>
+    <span class="stat-meta">Across all products</span>
+  </span>
+</a>
+  {% if is_owner %}
+    <a class="stat" href="{% url 'reports:profit' %}{% query_replace %}">
+  <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Estimated gross profit</span>
+    <span class="stat-value">{{ summary.profit|cedis }}</span>
+    <span class="stat-meta">{% if summary.margin_percent %}{{ summary.margin_percent|floatformat:1 }}% margin{% else %}—{% endif %}</span>
+  </span>
+</a>
+  {% endif %}
+  <a class="stat" href="{% url 'reports:inventory' %}">
+  <span class="stat-icon" aria-hidden="true">{% icon "layers" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Stock value at cost</span>
+    <span class="stat-value">{{ inventory.cost_value|cedis }}</span>
+    <span class="stat-meta">{{ inventory.product_count }} products holding stock</span>
+  </span>
+</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><span>Sales reports</span></div>
+      <div class="card-body">
+        <div class="stack-sm">
+          <a class="d-flex justify-content-between align-items-center py-2 border-bottom" href="{% url 'reports:sales' %}{% query_replace %}">
+            <span><strong>Sales over time</strong><br><span class="cell-sub">Daily, weekly or monthly totals</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          <a class="d-flex justify-content-between align-items-center py-2 border-bottom" href="{% url 'reports:products' %}{% query_replace %}">
+            <span><strong>Sales by product</strong><br><span class="cell-sub">Best sellers and slow movers</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          <a class="d-flex justify-content-between align-items-center py-2 border-bottom" href="{% url 'reports:categories' %}{% query_replace %}">
+            <span><strong>Sales by category</strong><br><span class="cell-sub">Which parts of the shop earn most</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          <a class="d-flex justify-content-between align-items-center py-2" href="{% url 'reports:payments' %}{% query_replace %}">
+            <span><strong>Payment methods</strong><br><span class="cell-sub">Cash, Mobile Money and bank transfer</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><span>Stock reports</span></div>
+      <div class="card-body">
+        <div class="stack-sm">
+          <a class="d-flex justify-content-between align-items-center py-2 border-bottom" href="{% url 'reports:inventory' %}">
+            <span><strong>Inventory value</strong><br>
+              <span class="cell-sub">{{ low_stock_count }} low · {{ out_of_stock_count }} out of stock</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          <a class="d-flex justify-content-between align-items-center py-2 border-bottom" href="{% url 'reports:expiry' %}">
+            <span><strong>Expiring &amp; expired</strong><br>
+              <span class="cell-sub">{{ expiring_count }} expiring soon · {{ expired_count }} already expired</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          <a class="d-flex justify-content-between align-items-center py-2 {% if is_owner %}border-bottom{% endif %}" href="{% url 'reports:adjustments' %}{% query_replace %}">
+            <span><strong>Stock adjustments</strong><br>
+              <span class="cell-sub">Damage, expiry, losses and corrections{% if is_owner %} — {{ losses|cedis }} written off{% endif %}</span></span>
+            {% icon "arrow-right" 16 %}
+          </a>
+          {% if is_owner %}
+            <a class="d-flex justify-content-between align-items-center py-2" href="{% url 'reports:profit' %}{% query_replace %}">
+              <span><strong>Estimated gross profit</strong><br>
+                <span class="cell-sub">Revenue minus what the goods cost</span></span>
+              {% icon "arrow-right" 16 %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-soft mt-3 mb-0" style="font-size: 0.8125rem;">
+  {% icon "info" 13 %} Every report can be downloaded as a CSV file and opened in Excel or Google Sheets.
+</p>
+{% endblock %}

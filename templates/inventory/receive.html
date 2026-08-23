@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Receive stock · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Receive stock{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{% if stage == "review" %}Check this delivery{% else %}Receive stock{% endif %}</h1>
+    <p class="lede">
+      {% if stage == "review" %}Nothing has been saved yet. Look it over, then confirm.
+      {% else %}Record what arrived, so the shelf count stays right.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if stage == "review" %}
+  <form method="post" data-guard-submit>
+    {% csrf_token %}
+    <input type="hidden" name="stage" value="confirm">
+    {% for field in form %}<input type="hidden" name="{{ field.html_name }}" value="{{ field.value|default_if_none:'' }}">{% endfor %}
+
+    <div class="card mb-3">
+      <div class="card-header"><span>About to record</span></div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Product</dt>
+          <dd class="col-7 col-sm-8 fw-semibold">{{ data.product.name }}<div class="cell-sub mono">{{ data.product.sku }}</div></dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Quantity received</dt>
+          <dd class="col-7 col-sm-8 fw-semibold tnum">{{ data.quantity|qty }} {{ data.product.unit_label }}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Cost per unit</dt>
+          <dd class="col-7 col-sm-8 tnum">{{ data.unit_cost|cedis }}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Total cost</dt>
+          <dd class="col-7 col-sm-8 tnum fw-semibold">{{ data.total_cost|cedis }}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Supplier</dt>
+          <dd class="col-7 col-sm-8">{{ data.supplier.name|default:"Not recorded" }}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Batch number</dt>
+          <dd class="col-7 col-sm-8 mono">{{ data.batch_number|default:"—" }}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Expiry date</dt>
+          <dd class="col-7 col-sm-8">{% if data.expiry_date %}{{ data.expiry_date|date:"j F Y" }}{% else %}Does not expire{% endif %}</dd>
+
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Date received</dt>
+          <dd class="col-7 col-sm-8">{{ data.received_on|date:"j F Y"|default:"Today" }}</dd>
+        </dl>
+
+        <div class="divider"></div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-muted-warm">Stock on hand after this</span>
+          <span class="fw-bold tnum" style="font-size: 1.25rem;">
+            {{ data.product.stock_quantity|qty }} → {{ data.stock_after|qty }} {{ data.product.unit_label }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" name="stage" value="edit" class="btn btn-quiet"
+              formnovalidate>Go back and change something</button>
+      <button type="submit" class="btn btn-primary btn-lg"><span class="btn-label">Confirm — add to stock</span></button>
+      <button type="submit" name="save_and_add" value="1" class="btn btn-outline-primary">
+        <span class="btn-label">Confirm and receive another</span>
+      </button>
+    </div>
+  </form>
+{% else %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+
+    <div class="card mb-3"><div class="card-body">
+      <div class="form-section">
+        <h2 class="section-title">What arrived?</h2>
+        {% include "partials/field.html" with field=form.product %}
+        <div class="row">
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.quantity %}</div>
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.unit_cost prefix=CURRENCY_SYMBOL %}</div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Where did it come from?</h2>
+        <p class="section-hint">Optional, but it makes returns and price checks much easier later.</p>
+        {% include "partials/field.html" with field=form.supplier %}
+        <a class="btn btn-sm btn-quiet mb-3" href="{% url 'catalog:supplier_create' %}?next=receive">
+          {% icon "plus" 14 %} Add a new supplier
+        </a>
+        <div class="row">
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.batch_number %}</div>
+          <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.expiry_date %}</div>
+        </div>
+        {% include "partials/field.html" with field=form.received_on %}
+        {% include "partials/field.html" with field=form.notes %}
+        {% include "partials/field.html" with field=form.update_cost_price %}
+      </div>
+    </div></div>
+
+    <div class="form-actions">
+      <a class="btn btn-quiet" href="{% url 'catalog:product_list' %}">Cancel</a>
+      <button type="submit" class="btn btn-primary"><span class="btn-label">Review this delivery</span></button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

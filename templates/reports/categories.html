@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sales by category · Reports{% endblock %}
+{% block page_title %}Sales by category{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Sales by category</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:categories_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="categories" %}
+{% include "partials/period_filter.html" %}
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Revenue by product category</caption>
+        <thead><tr><th scope="col">Category</th><th scope="col" class="text-end">Products sold</th>
+                   <th scope="col" class="text-end">Units</th><th scope="col" class="text-end">Revenue</th>
+                   {% if is_owner %}<th scope="col" class="text-end">Est. profit</th>{% endif %}
+                   <th scope="col" style="width: 25%;">Share of revenue</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="cell-primary">{{ row.product__category__name|default:"Uncategorised" }}</td>
+              <td class="text-end tnum">{{ row.product_count }}</td>
+              <td class="text-end tnum">{{ row.units|qty }}</td>
+              <td class="text-end tnum fw-semibold">{{ row.revenue|cedis }}</td>
+              {% if is_owner %}<td class="text-end tnum">{{ row.profit|cedis }}</td>{% endif %}
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="meter flex-grow-1" role="img" aria-label="{% widthratio row.revenue total 100 %} percent of revenue">
+                    <span style="width: {% if total %}{% widthratio row.revenue total 100 %}{% else %}0{% endif %}%"></span>
+                  </div>
+                  <span class="cell-sub tnum">{% if total %}{% widthratio row.revenue total 100 %}{% else %}0{% endif %}%</span>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted-warm py-4">No sales in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

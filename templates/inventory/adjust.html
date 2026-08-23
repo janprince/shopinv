@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Stock adjustment · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Stock adjustment{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{% if stage == "review" %}Check this change{% else %}Record a stock change{% endif %}</h1>
+    <p class="lede">
+      {% if stage == "review" %}Nothing has been saved yet.
+      {% else %}Damaged, expired, missing or returned stock — and counting corrections.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if stage == "review" %}
+  <form method="post" data-guard-submit>
+    {% csrf_token %}
+    <input type="hidden" name="stage" value="confirm">
+    {% for field in form %}<input type="hidden" name="{{ field.html_name }}" value="{{ field.value|default_if_none:'' }}">{% endfor %}
+
+    {% if is_large %}
+      <div class="alert alert-warning d-flex gap-2" role="alert">
+        <span class="pt-1">{% icon "alert" 16 %}</span>
+        <div>
+          <strong>That is a large change.</strong> {{ data.quantity|qty }} {{ data.product.unit_label }}
+          is at or above the shop's large-adjustment level. Please double-check the number before confirming.
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header"><span>About to record</span></div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Product</dt>
+          <dd class="col-7 col-sm-8 fw-semibold">{{ data.product.name }}<div class="cell-sub mono">{{ data.product.sku }}</div></dd>
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">What happened</dt>
+          <dd class="col-7 col-sm-8 fw-semibold">{{ type_label }}</dd>
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Quantity</dt>
+          <dd class="col-7 col-sm-8">
+            <span class="qty-delta {% if is_increase %}is-up{% else %}is-down{% endif %}">
+              {% if is_increase %}+{% else %}−{% endif %}{{ data.quantity|qty }} {{ data.product.unit_label }}
+            </span>
+            <span class="cell-sub">({{ is_increase|yesno:"added to,removed from" }} stock)</span>
+          </dd>
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Batch</dt>
+          <dd class="col-7 col-sm-8">{% if data.batch %}{{ data.batch.display_label }}{% else %}Oldest expiry first{% endif %}</dd>
+          <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Reason</dt>
+          <dd class="col-7 col-sm-8">{{ data.reason }}</dd>
+          {% if data.notes %}
+            <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Notes</dt>
+            <dd class="col-7 col-sm-8">{{ data.notes }}</dd>
+          {% endif %}
+        </dl>
+
+        <div class="divider"></div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="text-muted-warm">Stock on hand</span>
+          <span class="fw-bold tnum" style="font-size: 1.25rem;">
+            {{ data.product.stock_quantity|qty }} → {{ expected_after|qty }} {{ data.product.unit_label }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" name="stage" value="edit" class="btn btn-quiet" formnovalidate>Go back and change something</button>
+      <button type="submit" class="btn {% if is_increase %}btn-primary{% else %}btn-danger{% endif %} btn-lg">
+        <span class="btn-label">Confirm — record this change</span>
+      </button>
+    </div>
+  </form>
+{% else %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+
+    <div class="card mb-3"><div class="card-body">
+      <div class="form-section">
+        <h2 class="section-title">Which product?</h2>
+        {% include "partials/field.html" with field=form.product %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">What happened?</h2>
+        <p class="section-hint">Pick the closest match — this is what the history will say.</p>
+        <fieldset>
+          <legend class="visually-hidden">Type of stock change</legend>
+          <div class="choice-grid">
+            {% for choice in form.movement_type %}
+              <div class="choice-card">
+                {{ choice.tag }}
+                <label for="{{ choice.id_for_label }}">
+                  <span class="choice-name">{{ choice.choice_label }}</span>
+                  <span class="choice-hint">{{ form.help_by_type|get_item:choice.data.value }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% for error in form.movement_type.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">How much?</h2>
+        {% include "partials/field.html" with field=form.quantity %}
+        {% include "partials/field.html" with field=form.batch %}
+      </div>
+
+      <div class="form-section">
+        <h2 class="section-title">Why?</h2>
+        <p class="section-hint">Every stock change needs an explanation someone can read later.</p>
+        {% include "partials/field.html" with field=form.reason %}
+        {% include "partials/field.html" with field=form.notes %}
+      </div>
+    </div></div>
+
+    <div class="form-actions">
+      <a class="btn btn-quiet" href="{% url 'catalog:product_list' %}">Cancel</a>
+      <button type="submit" class="btn btn-primary"><span class="btn-label">Review this change</span></button>
+    </div>
+  </form>
+{% endif %}
+{% endblock %}

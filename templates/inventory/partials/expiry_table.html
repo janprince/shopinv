@@ -1,0 +1,64 @@
+{% load ui %}
+<div class="table-responsive-cards">
+  <div class="table-wrap">
+    <table class="table">
+      <caption class="visually-hidden">Batches {{ state }}</caption>
+      <thead>
+        <tr><th scope="col">Product</th><th scope="col">Batch</th><th scope="col">Supplier</th>
+            <th scope="col">Expiry date</th><th scope="col" class="text-end">Remaining</th>
+            {% if is_owner %}<th scope="col" class="text-end">Value at cost</th>{% endif %}
+            <th scope="col" class="text-end">Action</th></tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+          <tr>
+            <td><a class="cell-primary" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a>
+              <div class="cell-sub mono">{{ batch.product.sku }}</div></td>
+            <td class="cell-sub mono">{{ batch.batch_number|default:"—" }}</td>
+            <td class="cell-sub">{{ batch.supplier.name|default:"—" }}</td>
+            <td>
+              {{ batch.expiry_date|date:"j M Y" }}
+              <div class="cell-sub">
+                {% if batch.days_to_expiry < 0 %}
+                  {{ batch.days_to_expiry|cut:"-" }} day{{ batch.days_to_expiry|cut:"-"|pluralize }} ago
+                {% else %}
+                  in {{ batch.days_to_expiry }} day{{ batch.days_to_expiry|pluralize }}
+                {% endif %}
+              </div>
+            </td>
+            <td class="text-end tnum">{{ batch.quantity_remaining|qty }} {{ batch.product.unit_label }}</td>
+            {% if is_owner %}<td class="text-end tnum">{{ batch.remaining_value|cedis }}</td>{% endif %}
+            <td class="text-end">
+              <a class="btn btn-sm btn-quiet"
+                 href="{% url 'inventory:adjust' %}?product={{ batch.product.pk }}&type=expired">Write off</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="data-cards p-2">
+    {% for batch in batches %}
+      <div class="data-card">
+        <div class="dc-head">
+          <div><a class="dc-title" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a>
+            <div class="dc-sub">{{ batch.batch_number|default:"No batch number" }}</div></div>
+          {% if batch.days_to_expiry < 0 %}
+            <span class="badge-status badge-out">Expired</span>
+          {% else %}
+            <span class="badge-status badge-warn">{{ batch.days_to_expiry }} day{{ batch.days_to_expiry|pluralize }}</span>
+          {% endif %}
+        </div>
+        <dl class="dc-rows">
+          <dt>Expires</dt><dd>{{ batch.expiry_date|date:"j M Y" }}</dd>
+          <dt>Remaining</dt><dd>{{ batch.quantity_remaining|qty }} {{ batch.product.unit_label }}</dd>
+          <dt>Supplier</dt><dd>{{ batch.supplier.name|default:"—" }}</dd>
+        </dl>
+        <div class="dc-actions">
+          <a class="btn btn-sm btn-quiet" href="{% url 'inventory:adjust' %}?product={{ batch.product.pk }}&type=expired">Write off</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>

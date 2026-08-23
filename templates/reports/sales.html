@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sales report · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Sales over time{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Sales over time</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:sales_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="sales" %}
+{% include "partials/period_filter.html" %}
+
+<div class="stat-grid mb-3">
+  <div class="stat">
+  <span class="stat-icon" aria-hidden="true">{% icon "wallet" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Revenue</span>
+    <span class="stat-value">{{ summary.revenue|cedis }}</span>
+    <span class="stat-meta">{{ summary.count }} sale{{ summary.count|pluralize }}</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "box" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Items sold</span>
+    <span class="stat-value">{{ summary.units|qty }}</span>
+    <span class="stat-meta">Average sale {{ summary.average_sale|cedis }}</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-warning" aria-hidden="true">{% icon "tag" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Discounts given</span>
+    <span class="stat-value">{{ summary.discount|cedis }}</span>
+    <span class="stat-meta">Off a subtotal of {{ summary.subtotal|cedis }}</span>
+  </span>
+</div>
+  {% if is_owner %}
+    <div class="stat">
+  <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Estimated gross profit</span>
+    <span class="stat-value">{{ summary.profit|cedis }}</span>
+    <span class="stat-meta">{% if summary.margin_percent %}{{ summary.margin_percent|floatformat:1 }}% margin{% else %}—{% endif %}</span>
+  </span>
+</div>
+  {% endif %}
+</div>
+
+<div class="chip-row mb-3 no-print">
+  <a class="chip {% if grouping == 'day' %}is-active{% endif %}" href="{% query_replace group='day' %}">By day</a>
+  <a class="chip {% if grouping == 'week' %}is-active{% endif %}" href="{% query_replace group='week' %}">By week</a>
+  <a class="chip {% if grouping == 'month' %}is-active{% endif %}" href="{% query_replace group='month' %}">By month</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Sales by {{ grouping }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{% if grouping == 'day' %}Date{% elif grouping == 'week' %}Week starting{% else %}Month{% endif %}</th>
+            <th scope="col" class="text-end">Sales</th>
+            <th scope="col" class="text-end">Revenue</th>
+            {% if is_owner %}<th scope="col" class="text-end">Est. profit</th>{% endif %}
+            <th scope="col" style="width: 30%;">Relative size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="cell-primary">
+                {% if grouping == 'month' %}{{ row.day|date:"F Y" }}{% else %}{{ row.day|date:"D j M Y" }}{% endif %}
+              </td>
+              <td class="text-end tnum">{{ row.count }}</td>
+              <td class="text-end tnum fw-semibold">{{ row.revenue|cedis }}</td>
+              {% if is_owner %}<td class="text-end tnum">{{ row.profit|cedis }}</td>{% endif %}
+              <td>
+                <div class="meter" role="img" aria-label="{{ row.revenue|cedis }} in revenue">
+                  <span style="width: {% if peak %}{% widthratio row.revenue peak 100 %}{% else %}0{% endif %}%"></span>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted-warm py-4">No sales in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if payments %}
+  <div class="card mt-3">
+    <div class="card-header"><span>How customers paid</span>
+      <a href="{% url 'reports:payments' %}{% query_replace %}">Full report</a></div>
+    <div class="card-body">
+      <div class="rank-list">
+        {% for row in payments %}
+          <div class="rank-row">
+            <span class="rank-no">{{ forloop.counter }}</span>
+            <span class="rank-name">{{ row.label }} <span class="cell-sub">({{ row.count }} sale{{ row.count|pluralize }})</span></span>
+            <span class="rank-value">{{ row.revenue|cedis }}</span>
+          </div>
+          <div class="meter" role="img" aria-label="{{ row.label }}: {{ row.share|floatformat:0 }} percent of revenue">
+            <span style="width: {{ row.share|floatformat:0 }}%"></span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

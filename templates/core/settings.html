@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Shop settings · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Shop settings{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Shop settings</h1>
+    <p class="lede">
+      Changes here affect everyone.
+      {% if object.updated_by %}Last changed by {{ object.updated_by.display_name }} on {{ object.updated_at|date:"j M Y, H:i" }}.{% endif %}
+    </p>
+  </div>
+</div>
+
+<form method="post" data-guard-submit novalidate>
+  {% csrf_token %}
+  {% include "partials/form_errors.html" %}
+
+  <div class="card"><div class="card-body">
+    <div class="form-section">
+      <h2 class="section-title">Shop identity</h2>
+      <p class="section-hint">Shown in the app, on the sign-in screen and on every receipt.</p>
+      {% include "partials/field.html" with field=form.shop_name %}
+      {% include "partials/field.html" with field=form.tagline %}
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.phone %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.email %}</div>
+      </div>
+      {% include "partials/field.html" with field=form.address %}
+      {% include "partials/field.html" with field=form.receipt_footer %}
+    </div>
+
+    <div class="form-section">
+      <h2 class="section-title">Warnings</h2>
+      <p class="section-hint">When the shop should be told something needs attention.</p>
+      <div class="row">
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.low_stock_threshold %}</div>
+        <div class="col-12 col-sm-6">{% include "partials/field.html" with field=form.expiry_warning_days %}</div>
+      </div>
+      {% include "partials/field.html" with field=form.large_adjustment_threshold %}
+    </div>
+  </div></div>
+
+  <div class="form-actions">
+    <a class="btn btn-quiet" href="{% url 'core:dashboard' %}">Cancel</a>
+    <button type="submit" class="btn btn-primary"><span class="btn-label">Save settings</span></button>
+  </div>
+</form>
+
+<div class="card mt-4">
+  <div class="card-header"><span>Fixed settings</span></div>
+  <div class="card-body">
+    <dl class="row mb-0" style="font-size: 0.875rem;">
+      <dt class="col-6 text-muted-warm fw-normal">Currency</dt>
+      <dd class="col-6">Ghana cedi ({{ CURRENCY_SYMBOL }})</dd>
+      <dt class="col-6 text-muted-warm fw-normal">Time zone</dt>
+      <dd class="col-6">{{ TIME_ZONE|default:"Africa/Accra" }}</dd>
+    </dl>
+    <p class="cell-sub mt-3 mb-0">
+      These are set by the person who installed the app, in the server's environment settings.
+    </p>
+  </div>
+</div>
+{% endblock %}

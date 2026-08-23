@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Categories · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Categories</h1>
+    <p class="lede">Categories keep the product list and reports tidy.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="{% url 'catalog:category_create' %}">{% icon "plus" 16 %} Add category</a>
+  </div>
+</div>
+
+<div class="card table-responsive-cards">
+  <div class="card-body p-0">
+    {% if categories %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Product categories</caption>
+          <thead><tr><th scope="col">Category</th><th scope="col" class="text-end">Products</th>
+                     <th scope="col">Status</th><th scope="col" class="text-end">Actions</th></tr></thead>
+          <tbody>
+            {% for category in categories %}
+              <tr>
+                <td>
+                  <a class="cell-primary" href="{{ category.get_absolute_url }}">{{ category.name }}</a>
+                  {% if category.description %}<div class="cell-sub">{{ category.description }}</div>{% endif %}
+                </td>
+                <td class="text-end tnum">{{ category.product_count }}</td>
+                <td>{% if category.is_active %}<span class="badge-status badge-in">Active</span>
+                    {% else %}<span class="badge-status badge-muted">Inactive</span>{% endif %}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-quiet" href="{% url 'catalog:category_edit' category.pk %}">Edit</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="data-cards p-2">
+        {% for category in categories %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div><a class="dc-title" href="{{ category.get_absolute_url }}">{{ category.name }}</a>
+                <div class="dc-sub">{{ category.product_count }} product{{ category.product_count|pluralize }}</div></div>
+              {% if not category.is_active %}<span class="badge-status badge-muted">Inactive</span>{% endif %}
+            </div>
+            <div class="dc-actions"><a class="btn btn-sm btn-quiet" href="{% url 'catalog:category_edit' category.pk %}">Edit</a></div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "partials/empty_state.html" with glyph="layers" title="No categories yet" body="Group products so the shop can find and report on them easily." action_url="/catalog/categories/new/" action_label="Add a category" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

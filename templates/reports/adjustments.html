@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Stock adjustments · Reports{% endblock %}
+{% block page_title %}Stock adjustments{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Stock adjustments</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:adjustments_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="adjustments" %}
+{% include "partials/period_filter.html" %}
+
+<div class="stat-grid mb-3">
+  <div class="stat">
+  <span class="stat-icon is-danger" aria-hidden="true">{% icon "alert" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Value written off</span>
+    <span class="stat-value">{{ losses|cedis }}</span>
+    <span class="stat-meta">Damaged, expired, missing and downward corrections</span>
+  </span>
+</div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header"><span>Summary by type</span></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Stock adjustments grouped by type</caption>
+        <thead><tr><th scope="col">Type</th><th scope="col">Direction</th>
+                   <th scope="col" class="text-end">Times recorded</th>
+                   <th scope="col" class="text-end">Units</th>
+                   <th scope="col" class="text-end">Value at cost</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="cell-primary">{{ row.label }}</td>
+              <td><span class="badge-status {% if row.is_loss %}badge-warn{% else %}badge-in{% endif %}">
+                {% if row.is_loss %}Removed{% else %}Added{% endif %}</span></td>
+              <td class="text-end tnum">{{ row.count }}</td>
+              <td class="text-end tnum">{{ row.units|qty }}</td>
+              <td class="text-end tnum">{{ row.value|cedis }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted-warm py-4">No adjustments in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>Every adjustment in this period</span>
+    <a href="{% url 'inventory:movements' %}{% query_replace %}">Open in stock history</a></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Individual stock adjustments</caption>
+        <thead><tr><th scope="col">When</th><th scope="col">Product</th><th scope="col">Type</th>
+                   <th scope="col" class="text-end">Change</th><th scope="col">Reason</th>
+                   <th scope="col">Who</th></tr></thead>
+        <tbody>
+          {% for movement in detail %}
+            <tr>
+              <td class="cell-sub">{{ movement.created_at|date:"j M Y, H:i" }}</td>
+              <td><a class="cell-primary" href="{{ movement.product.get_absolute_url }}">{{ movement.product.name }}</a></td>
+              <td class="cell-sub">{{ movement.get_movement_type_display }}</td>
+              <td class="text-end">
+                <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">{{ movement.signed_quantity }}</span>
+                <div class="cell-sub">{{ movement.direction_label }}</div>
+              </td>
+              <td class="cell-sub">{{ movement.reason|default:"—" }}</td>
+              <td class="cell-sub">{{ movement.user.display_name|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-center text-muted-warm py-4">No adjustments in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

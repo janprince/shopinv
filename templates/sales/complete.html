@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sale {{ sale.sale_number }} recorded{% endblock %}
+{% block page_title %}Sale complete{% endblock %}
+{% block container_class %}page-narrow{% endblock %}
+
+{% block content %}
+<div class="success-hero mb-3">
+  <div class="tick">{% icon "check" 28 %}</div>
+  <p class="label-caps mb-1">Sale recorded</p>
+  <p class="amount mb-1">{{ sale.total|cedis }}</p>
+  <p class="mb-0 text-muted-warm">
+    <span class="mono">{{ sale.sale_number }}</span> · {{ sale.get_payment_method_display }}
+    {% if sale.change_due %} · change given {{ sale.change_due|cedis }}{% endif %}
+  </p>
+</div>
+
+<div class="d-grid gap-2 d-sm-flex mb-3 no-print">
+  <a class="btn btn-primary btn-lg flex-fill" href="{% url 'sales:pos' %}">
+    {% icon "plus" 18 %} Start the next sale
+  </a>
+  <a class="btn btn-quiet btn-lg flex-fill" href="{% url 'sales:receipt' sale.pk %}?print=1" target="_blank" rel="noopener">
+    {% icon "printer" 18 %} Print receipt
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>What was sold</span><a href="{{ sale.get_absolute_url }}">Full details</a></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Items in sale {{ sale.sale_number }}</caption>
+        <thead>
+          <tr><th scope="col">Item</th><th scope="col" class="text-end">Qty</th>
+              <th scope="col" class="text-end">Price</th><th scope="col" class="text-end">Total</th></tr>
+        </thead>
+        <tbody>
+          {% for item in sale.items.all %}
+            <tr>
+              <td class="cell-primary">{{ item.product_name }}<div class="cell-sub mono">{{ item.sku }}</div></td>
+              <td class="text-end tnum">{{ item.display_quantity }}</td>
+              <td class="text-end tnum">{{ item.unit_price|cedis }}</td>
+              <td class="text-end tnum">{{ item.line_total|cedis }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          {% if sale.discount %}
+            <tr><td colspan="3" class="text-end">Subtotal</td><td class="text-end tnum">{{ sale.subtotal|cedis }}</td></tr>
+            <tr><td colspan="3" class="text-end">Discount</td><td class="text-end tnum">−{{ sale.discount|cedis }}</td></tr>
+          {% endif %}
+          <tr class="fw-bold"><td colspan="3" class="text-end">Total</td><td class="text-end tnum">{{ sale.total|cedis }}</td></tr>
+          {% if sale.amount_received %}
+            <tr><td colspan="3" class="text-end text-muted-warm">Cash received</td><td class="text-end tnum">{{ sale.amount_received|cedis }}</td></tr>
+            <tr><td colspan="3" class="text-end text-muted-warm">Change</td><td class="text-end tnum">{{ sale.change_due|cedis }}</td></tr>
+          {% endif %}
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<p class="cell-sub mt-3">
+  Recorded by {{ sale.user.display_name|default:"—" }} at {{ sale.completed_at|date:"H:i" }} on
+  {{ sale.completed_at|date:"j F Y" }}. Stock has already been reduced.
+</p>
+{% endblock %}

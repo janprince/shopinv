@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Users · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Users{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Users</h1>
+    <p class="lede">Who can sign in, and what they are allowed to do.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% icon "plus" 16 %} Add team member</a>
+  </div>
+</div>
+
+<div class="card table-responsive-cards">
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Shop staff accounts</caption>
+        <thead>
+          <tr><th scope="col">Name</th><th scope="col">Username</th><th scope="col">Role</th>
+              <th scope="col">Last signed in</th><th scope="col" class="text-end">Sales recorded</th>
+              <th scope="col">Status</th><th scope="col" class="text-end">Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for person in users %}
+            <tr>
+              <td>
+                <span class="cell-primary">{{ person.display_name }}</span>
+                {% if person.pk == request.user.pk %}<span class="badge-status badge-info">You</span>{% endif %}
+                {% if person.email %}<div class="cell-sub">{{ person.email }}</div>{% endif %}
+              </td>
+              <td class="cell-sub mono">{{ person.username }}</td>
+              <td>
+                <span class="badge-status {% if person.is_owner %}badge-in{% else %}badge-info{% endif %}">
+                  {{ person.get_role_display }}
+                </span>
+              </td>
+              <td class="cell-sub">{{ person.last_login|date:"j M Y, H:i"|default:"Never" }}</td>
+              <td class="text-end tnum">{{ person.sale_count }}</td>
+              <td>{% if person.is_active %}<span class="badge-status badge-in">Active</span>
+                  {% else %}<span class="badge-status badge-muted">Switched off</span>{% endif %}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-quiet" href="{% url 'accounts:user_edit' person.pk %}">Edit</a>
+                <a class="btn btn-sm btn-quiet" href="{% url 'accounts:user_reset_password' person.pk %}">Password</a>
+                {% if person.pk != request.user.pk %}
+                  <form method="post" action="{% url 'accounts:user_toggle_active' person.pk %}" class="d-inline"
+                        data-confirm="{% if person.is_active %}Switch off {{ person.display_name }}'s account? They will not be able to sign in.{% else %}Switch {{ person.display_name }}'s account back on?{% endif %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-quiet">
+                      {% if person.is_active %}Switch off{% else %}Switch on{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="data-cards p-2">
+      {% for person in users %}
+        <div class="data-card">
+          <div class="dc-head">
+            <div><span class="dc-title">{{ person.display_name }}</span>
+              <div class="dc-sub mono">{{ person.username }}</div></div>
+            <div class="d-flex flex-column gap-1 align-items-end">
+              <span class="badge-status {% if person.is_owner %}badge-in{% else %}badge-info{% endif %}">{{ person.get_role_display }}</span>
+              {% if not person.is_active %}<span class="badge-status badge-muted">Switched off</span>{% endif %}
+            </div>
+          </div>
+          <dl class="dc-rows">
+            <dt>Last signed in</dt><dd>{{ person.last_login|date:"j M Y"|default:"Never" }}</dd>
+            <dt>Sales recorded</dt><dd>{{ person.sale_count }}</dd>
+          </dl>
+          <div class="dc-actions">
+            <a class="btn btn-sm btn-quiet" href="{% url 'accounts:user_edit' person.pk %}">Edit</a>
+            <a class="btn btn-sm btn-quiet" href="{% url 'accounts:user_reset_password' person.pk %}">Set password</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header"><span>What each role can do</span></div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <h3 class="h6">Owner</h3>
+        <ul class="mb-0 ps-3" style="font-size: 0.875rem; color: var(--ink-700);">
+          <li>Everything a shopkeeper can do</li>
+          <li>See cost prices and profit estimates</li>
+          <li>Reverse completed sales</li>
+          <li>Add, edit and switch off users</li>
+          <li>Change shop settings</li>
+          <li>Read the audit history</li>
+        </ul>
+      </div>
+      <div class="col-12 col-md-6">
+        <h3 class="h6">Shopkeeper</h3>
+        <ul class="mb-0 ps-3" style="font-size: 0.875rem; color: var(--ink-700);">
+          <li>Record sales and print receipts</li>
+          <li>Add and edit products, categories and suppliers</li>
+          <li>Receive stock and record damage, expiry, losses and returns</li>
+          <li>See sales and stock history</li>
+          <li>Cannot reverse sales, manage users or change settings</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

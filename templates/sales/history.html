@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sales · {{ shop.shop_name }}{% endblock %}
+{% block page_title %}Sales{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Sales</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'sales:history_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+    <a class="btn btn-primary" href="{% url 'sales:pos' %}">{% icon "cart" 16 %} New sale</a>
+  </div>
+</div>
+
+<div class="stat-grid mb-3">
+  <div class="stat">
+  <span class="stat-icon" aria-hidden="true">{% icon "wallet" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Revenue in this period</span>
+    <span class="stat-value">{{ totals.revenue|cedis }}</span>
+    <span class="stat-meta">{{ totals.count }} completed sale{{ totals.count|pluralize }}</span>
+  </span>
+</div>
+  {% if is_owner %}
+    <div class="stat">
+  <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Estimated gross profit</span>
+    <span class="stat-value">{{ totals.profit|cedis }}</span>
+    <span class="stat-meta">Before rent, wages and other expenses</span>
+  </span>
+</div>
+  {% endif %}
+</div>
+
+{% include "partials/period_filter.html" %}
+
+<div class="filter-bar no-print">
+  <form method="get" class="row g-2 align-items-end">
+    <input type="hidden" name="from" value="{{ start|date:'Y-m-d' }}">
+    <input type="hidden" name="to" value="{{ end|date:'Y-m-d' }}">
+    <div class="col-12 col-md-4">
+      <label class="form-label" for="f-q">Search</label>
+      <input type="search" class="form-control" id="f-q" name="q" value="{{ request.GET.q }}"
+             placeholder="Sale number or product">
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-payment">Payment</label>
+      <select class="form-select" id="f-payment" name="payment" data-auto-submit>
+        <option value="">All</option>
+        {% for value, label in payment_methods %}
+          <option value="{{ value }}" {% if request.GET.payment == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-status">Status</label>
+      <select class="form-select" id="f-status" name="status" data-auto-submit>
+        <option value="">All</option>
+        {% for value, label in statuses %}
+          <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" for="f-user">Recorded by</label>
+      <select class="form-select" id="f-user" name="user" data-auto-submit>
+        <option value="">Everyone</option>
+        {% for person in staff %}
+          <option value="{{ person.pk }}" {% if request.GET.user == person.pk|stringformat:"s" %}selected{% endif %}>
+            {{ person.display_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <button type="submit" class="btn btn-quiet btn-block">Search</button>
+    </div>
+  </form>
+</div>
+
+{% if sales %}
+  <div class="card table-responsive-cards">
+    <div class="card-body p-0">
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="visually-hidden">Sales between {{ start }} and {{ end }}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Sale</th><th scope="col">Date &amp; time</th><th scope="col">Recorded by</th>
+              <th scope="col">Payment</th><th scope="col" class="text-end">Items</th>
+              <th scope="col" class="text-end">Total</th>
+              {% if is_owner %}<th scope="col" class="text-end">Est. profit</th>{% endif %}
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sale in sales %}
+              <tr>
+                <td><a class="cell-primary mono" href="{{ sale.get_absolute_url }}">{{ sale.sale_number }}</a></td>
+                <td class="cell-sub">{{ sale.completed_at|date:"j M Y, H:i" }}</td>
+                <td class="cell-sub">{{ sale.user.display_name|default:"—" }}</td>
+                <td class="cell-sub">{{ sale.get_payment_method_display }}</td>
+                <td class="text-end tnum">{{ sale.line_count }}</td>
+                <td class="text-end tnum fw-semibold {% if sale.is_reversed %}text-decoration-line-through text-muted-warm{% endif %}">
+                  {{ sale.total|cedis }}</td>
+                {% if is_owner %}
+                  <td class="text-end tnum">{% if sale.is_reversed %}—{% else %}{{ sale.gross_profit|cedis }}{% endif %}</td>
+                {% endif %}
+                <td>{% sale_status_badge sale %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="data-cards p-2">
+        {% for sale in sales %}
+          <div class="data-card">
+            <div class="dc-head">
+              <div>
+                <a class="dc-title mono" href="{{ sale.get_absolute_url }}">{{ sale.sale_number }}</a>
+                <div class="dc-sub">{{ sale.completed_at|date:"j M Y, H:i" }}</div>
+              </div>
+              {% sale_status_badge sale %}
+            </div>
+            <dl class="dc-rows">
+              <dt>Total</dt><dd class="fw-bold">{{ sale.total|cedis }}</dd>
+              <dt>Items</dt><dd>{{ sale.line_count }}</dd>
+              <dt>Payment</dt><dd>{{ sale.get_payment_method_display }}</dd>
+              <dt>By</dt><dd>{{ sale.user.display_name|default:"—" }}</dd>
+              {% if is_owner and not sale.is_reversed %}
+                <dt>Est. profit</dt><dd>{{ sale.gross_profit|cedis }}</dd>
+              {% endif %}
+            </dl>
+            <div class="dc-actions">
+              <a class="btn btn-sm btn-quiet" href="{{ sale.get_absolute_url }}">Details</a>
+              <a class="btn btn-sm btn-quiet" href="{% url 'sales:receipt' sale.pk %}" target="_blank" rel="noopener">Receipt</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% include "partials/pagination.html" %}
+{% else %}
+  <div class="card"><div class="card-body">
+    {% include "partials/empty_state.html" with glyph="receipt" title="No sales in this period" body="Try a wider date range, or clear the filters." action_url="/sales/new/" action_label="Record a sale" %}
+  </div></div>
+{% endif %}
+{% endblock %}

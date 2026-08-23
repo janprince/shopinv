@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ product.name }} · Products{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>{{ product.name }}</h1>
+    <p class="lede">
+      <span class="mono">{{ product.sku }}</span> · {{ product.category.name }} · sold by {{ product.get_unit_display|lower }}
+    </p>
+    <div class="d-flex flex-wrap gap-1 mt-2">
+      {% stock_badge product %}
+      {% expiry_badge expiry_state %}
+      {% active_badge product.is_active %}
+    </div>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'inventory:adjust' %}?product={{ product.pk }}">{% icon "layers" 16 %} Adjust stock</a>
+    <a class="btn btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">{% icon "truck" 16 %} Receive stock</a>
+    <a class="btn btn-outline-primary" href="{% url 'catalog:product_edit' product.pk %}">{% icon "edit" 16 %} Edit</a>
+  </div>
+</div>
+
+<div class="stat-grid mb-3">
+  <div class="stat {% if product.stock_status == 'out' %}is-alert{% elif product.stock_status == 'low' %}is-warn{% endif %}">
+  <span class="stat-icon" aria-hidden="true">{% icon "box" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">On the shelf</span>
+    <span class="stat-value">{{ product.display_stock }}</span>
+    <span class="stat-meta">Warn below {{ product.minimum_stock|qty }} {{ product.unit_label }}</span>
+  </span>
+</div>
+  <div class="stat">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "tag" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Selling price</span>
+    <span class="stat-value">{{ product.selling_price|cedis }}</span>
+    <span class="stat-meta">per {{ product.get_unit_display|lower }}</span>
+  </span>
+</div>
+  {% if is_owner %}
+    <div class="stat">
+  <span class="stat-icon" aria-hidden="true">{% icon "layers" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Stock value at cost</span>
+    <span class="stat-value">{{ product.stock_value|cedis }}</span>
+    <span class="stat-meta">{{ product.retail_stock_value|cedis }} at selling price</span>
+  </span>
+</div>
+    <div class="stat">
+  <span class="stat-icon is-success" aria-hidden="true">{% icon "chart" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Margin per unit</span>
+    <span class="stat-value">{{ product.unit_margin|cedis }}</span>
+    <span class="stat-meta">{% if product.margin_percent %}{{ product.margin_percent|floatformat:0 }}% of the selling price{% else %}—{% endif %}</span>
+  </span>
+</div>
+  {% else %}
+    <div class="stat">
+  <span class="stat-icon is-info" aria-hidden="true">{% icon "receipt" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">Sold all time</span>
+    <span class="stat-value">{{ sold_totals.units|qty }}</span>
+    <span class="stat-meta">{{ product.unit_label }} across all sales</span>
+  </span>
+</div>
+  {% endif %}
+</div>
+
+{% if soonest_expiry %}
+  <div class="alert {% if expiry_state == 'expired' %}alert-danger{% elif expiry_state == 'expiring' %}alert-warning{% else %}alert-info{% endif %} d-flex gap-2">
+    <span class="pt-1">{% icon "clock" 16 %}</span>
+    <div>
+      {% if expiry_state == "expired" %}
+        Stock of this product expired on {{ soonest_expiry|date:"j F Y" }}. Record it as expired stock to take it off the shelf.
+      {% elif expiry_state == "expiring" %}
+        The oldest batch expires on {{ soonest_expiry|date:"j F Y" }} — within the next {{ warning_days }} days.
+      {% else %}
+        The oldest batch expires on {{ soonest_expiry|date:"j F Y" }}.
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    {# ---------- Batches ---------- #}
+    <div class="card mb-3">
+      <div class="card-header"><span>Stock on hand, batch by batch</span></div>
+      <div class="card-body p-0">
+        {% if batches %}
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="visually-hidden">Batches of {{ product.name }} still holding stock</caption>
+              <thead>
+                <tr><th scope="col">Batch</th><th scope="col">Supplier</th><th scope="col">Received</th>
+                    <th scope="col">Expires</th><th scope="col" class="text-end">Remaining</th>
+                    {% if is_owner %}<th scope="col" class="text-end">Unit cost</th>{% endif %}</tr>
+              </thead>
+              <tbody>
+                {% for batch in batches %}
+                  <tr>
+                    <td class="cell-primary">{{ batch.batch_number|default:"—" }}
+                      <div class="cell-sub">{{ batch.get_source_display }}</div></td>
+                    <td class="cell-sub">{{ batch.supplier.name|default:"—" }}</td>
+                    <td class="cell-sub">{{ batch.received_at|date:"j M Y" }}</td>
+                    <td>
+                      {% if batch.expiry_date %}
+                        {{ batch.expiry_date|date:"j M Y" }}
+                        {% expiry_badge batch.expiry_state %}
+                      {% else %}<span class="text-soft">Does not expire</span>{% endif %}
+                    </td>
+                    <td class="text-end tnum fw-semibold">{{ batch.quantity_remaining|qty }} {{ product.unit_label }}
+                      <div class="cell-sub">of {{ batch.quantity_received|qty }}</div></td>
+                    {% if is_owner %}<td class="text-end tnum">{{ batch.unit_cost|cedis }}</td>{% endif %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "partials/empty_state.html" with glyph="truck" title="Nothing in stock" body="Receive stock to put this product back on the shelf." action_url="/stock/receive/" action_label="Receive stock" %}
+        {% endif %}
+      </div>
+    </div>
+
+    {# ---------- Movements ---------- #}
+    <div class="card">
+      <div class="card-header">
+        <span>Everything that changed the stock</span>
+        <a href="{% url 'inventory:movements' %}?product={{ product.pk }}&period=year">Full history</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">The 20 most recent stock movements for {{ product.name }}</caption>
+            <thead>
+              <tr><th scope="col">When</th><th scope="col">What happened</th>
+                  <th scope="col" class="text-end">Change</th><th scope="col" class="text-end">Left after</th>
+                  <th scope="col">Who</th></tr>
+            </thead>
+            <tbody>
+              {% for movement in movements %}
+                <tr>
+                  <td class="cell-sub">{{ movement.created_at|date:"j M Y, H:i" }}</td>
+                  <td>
+                    <span class="cell-primary">{{ movement.get_movement_type_display }}</span>
+                    {% if movement.reason %}<div class="cell-sub">{{ movement.reason }}</div>{% endif %}
+                    {% if movement.sale_id %}
+                      <div class="cell-sub"><a class="mono" href="{{ movement.sale.get_absolute_url }}">{{ movement.sale.sale_number }}</a></div>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">
+                      {{ movement.signed_quantity }}
+                    </span>
+                    <div class="cell-sub">{{ movement.direction_label }}</div>
+                  </td>
+                  <td class="text-end tnum">{{ movement.quantity_after|qty }}</td>
+                  <td class="cell-sub">{{ movement.user.display_name|default:"—" }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="5" class="text-center text-muted-warm py-4">No stock changes recorded yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header"><span>Product details</span></div>
+      <div class="card-body">
+        <dl class="row mb-0" style="font-size: 0.875rem;">
+          <dt class="col-5 text-muted-warm fw-normal">Product code</dt>
+          <dd class="col-7 mono">{{ product.sku }}</dd>
+          <dt class="col-5 text-muted-warm fw-normal">Category</dt>
+          <dd class="col-7">{{ product.category.name }}</dd>
+          <dt class="col-5 text-muted-warm fw-normal">Sold by</dt>
+          <dd class="col-7">{{ product.get_unit_display }}</dd>
+          {% if is_owner %}
+            <dt class="col-5 text-muted-warm fw-normal">Default cost</dt>
+            <dd class="col-7 tnum">{{ product.cost_price|cedis }}</dd>
+          {% endif %}
+          <dt class="col-5 text-muted-warm fw-normal">Barcode</dt>
+          <dd class="col-7 mono">{{ product.barcode|default:"—" }}</dd>
+          <dt class="col-5 text-muted-warm fw-normal">Added</dt>
+          <dd class="col-7">{{ product.created_at|date:"j M Y" }}</dd>
+          <dt class="col-5 text-muted-warm fw-normal">Last updated</dt>
+          <dd class="col-7">{{ product.updated_at|date:"j M Y, H:i" }}</dd>
+        </dl>
+        {% if product.description %}
+          <div class="divider"></div>
+          <p class="mb-0" style="font-size: 0.875rem;">{{ product.description|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><span>How it has sold</span></div>
+      <div class="card-body">
+        <dl class="row mb-0" style="font-size: 0.875rem;">
+          <dt class="col-7 text-muted-warm fw-normal">Units sold all time</dt>
+          <dd class="col-5 text-end tnum">{{ sold_totals.units|qty }}</dd>
+          <dt class="col-7 text-muted-warm fw-normal">Revenue all time</dt>
+          <dd class="col-5 text-end tnum">{{ sold_totals.revenue|cedis }}</dd>
+          {% if is_owner %}
+            <dt class="col-7 text-muted-warm fw-normal">Estimated gross profit</dt>
+            <dd class="col-5 text-end tnum">{{ sold_totals.profit|cedis }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>Recent sales</span></div>
+      <div class="card-body p-0">
+        <div class="table-wrap">
+          <table class="table">
+            <caption class="visually-hidden">Recent sales including {{ product.name }}</caption>
+            <thead><tr><th scope="col">Sale</th><th scope="col" class="text-end">Qty</th>
+                       <th scope="col" class="text-end">Total</th></tr></thead>
+            <tbody>
+              {% for item in recent_sales %}
+                <tr>
+                  <td><a class="mono cell-primary" href="{{ item.sale.get_absolute_url }}">{{ item.sale.sale_number }}</a>
+                    <div class="cell-sub">{{ item.sale.completed_at|date:"j M Y, H:i" }}</div></td>
+                  <td class="text-end tnum">{{ item.display_quantity }}</td>
+                  <td class="text-end tnum">{{ item.line_total|cedis }}</td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="3" class="text-center text-muted-warm py-4">Not sold yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

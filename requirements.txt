@@ -1,0 +1,8 @@
+# Runtime dependencies. Pinned to minor versions so a deploy is reproducible.
+Django==5.2.*
+psycopg[binary]==3.2.*
+dj-database-url==2.3.*
+python-dotenv==1.0.*
+whitenoise==6.8.*
+gunicorn==23.0.*
+django-htmx==1.21.*

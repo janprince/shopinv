@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Payment methods · Reports{% endblock %}
+{% block page_title %}Payment methods{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Payment methods</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:payments_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="payments" %}
+{% include "partials/period_filter.html" %}
+
+<div class="row g-3">
+  {% for row in rows %}
+    <div class="col-12 col-md-4">
+      <div class="stat h-100">
+  <span class="stat-icon" aria-hidden="true">{% icon "info" 20 %}</span>
+  <span class="stat-body">
+    <span class="stat-label">{{ row.label }}</span>
+    <span class="stat-value">{{ row.revenue|cedis }}</span>
+    <span class="stat-meta">{{ row.count }} sale{{ row.count|pluralize }} · {{ row.share|floatformat:1 }}% of revenue</span>
+        <div class="meter mt-2" role="img" aria-label="{{ row.share|floatformat:0 }} percent of revenue">
+          <span style="width: {{ row.share|floatformat:0 }}%"></span>
+  </span>
+</div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12"><div class="card"><div class="card-body">
+      {% include "partials/empty_state.html" with glyph="wallet" title="No sales in this period" body="Choose a wider date range to see how customers paid." %}
+    </div></div></div>
+  {% endfor %}
+</div>
+
+{% if rows %}
+  <div class="card mt-3">
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-8 col-sm-6 text-muted-warm fw-normal">Total taken in this period</dt>
+        <dd class="col-4 col-sm-6 text-end tnum fw-bold">{{ summary.revenue|cedis }}</dd>
+        <dt class="col-8 col-sm-6 text-muted-warm fw-normal">Number of sales</dt>
+        <dd class="col-4 col-sm-6 text-end tnum">{{ summary.count }}</dd>
+        <dt class="col-8 col-sm-6 text-muted-warm fw-normal">Average sale</dt>
+        <dd class="col-4 col-sm-6 text-end tnum">{{ summary.average_sale|cedis }}</dd>
+      </dl>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

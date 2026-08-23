@@ -1,0 +1,14 @@
+{% load ui %}
+<div class="chip-row mb-3 no-print">
+  <a class="chip {% if active == 'index' %}is-active{% endif %}" href="{% url 'reports:index' %}{% query_replace %}">Overview</a>
+  <a class="chip {% if active == 'sales' %}is-active{% endif %}" href="{% url 'reports:sales' %}{% query_replace %}">Sales</a>
+  <a class="chip {% if active == 'products' %}is-active{% endif %}" href="{% url 'reports:products' %}{% query_replace %}">By product</a>
+  <a class="chip {% if active == 'categories' %}is-active{% endif %}" href="{% url 'reports:categories' %}{% query_replace %}">By category</a>
+  <a class="chip {% if active == 'payments' %}is-active{% endif %}" href="{% url 'reports:payments' %}{% query_replace %}">Payments</a>
+  <a class="chip {% if active == 'inventory' %}is-active{% endif %}" href="{% url 'reports:inventory' %}">Inventory</a>
+  <a class="chip {% if active == 'expiry' %}is-active{% endif %}" href="{% url 'reports:expiry' %}">Expiry</a>
+  <a class="chip {% if active == 'adjustments' %}is-active{% endif %}" href="{% url 'reports:adjustments' %}{% query_replace %}">Adjustments</a>
+  {% if is_owner %}
+    <a class="chip {% if active == 'profit' %}is-active{% endif %}" href="{% url 'reports:profit' %}{% query_replace %}">Profit</a>
+  {% endif %}
+</div>

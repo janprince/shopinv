@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Sales by product · Reports{% endblock %}
+{% block page_title %}Sales by product{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="title-block">
+    <h1>Sales by product</h1>
+    <p class="lede">{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-quiet" href="{% url 'reports:products_export' %}{% query_replace %}">{% icon "download" 16 %} Export CSV</a>
+  </div>
+</div>
+
+{% include "reports/_nav.html" with active="products" %}
+{% include "partials/period_filter.html" %}
+
+<div class="chip-row mb-3 no-print">
+  <a class="chip {% if order == '-revenue' %}is-active{% endif %}" href="{% query_replace order='-revenue' %}">Top by revenue</a>
+  <a class="chip {% if order == '-units' %}is-active{% endif %}" href="{% query_replace order='-units' %}">Top by quantity</a>
+  {% if is_owner %}
+    <a class="chip {% if order == '-profit' %}is-active{% endif %}" href="{% query_replace order='-profit' %}">Top by profit</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3 table-responsive-cards">
+  <div class="card-header"><span>Best sellers</span></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Products sold between {{ start }} and {{ end }}</caption>
+        <thead>
+          <tr><th scope="col">#</th><th scope="col">Product</th><th scope="col">Category</th>
+              <th scope="col" class="text-end">Units</th><th scope="col" class="text-end">Revenue</th>
+              {% if is_owner %}<th scope="col" class="text-end">Est. profit</th>{% endif %}
+              <th scope="col" style="width: 20%;">Share</th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="text-muted-warm tnum">{{ forloop.counter }}</td>
+              <td><a class="cell-primary" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
+                <div class="cell-sub mono">{{ row.sku }}</div></td>
+              <td class="cell-sub">{{ row.product__category__name|default:"—" }}</td>
+              <td class="text-end tnum">{{ row.units|qty }}</td>
+              <td class="text-end tnum fw-semibold">{{ row.revenue|cedis }}</td>
+              {% if is_owner %}<td class="text-end tnum">{{ row.profit|cedis }}</td>{% endif %}
+              <td><div class="meter" role="img" aria-label="{{ row.revenue|cedis }} of revenue">
+                <span style="width: {% if peak %}{% widthratio row.revenue peak 100 %}{% else %}0{% endif %}%"></span></div></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center text-muted-warm py-4">No products were sold in this period.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="data-cards p-2">
+      {% for row in rows %}
+        <div class="data-card">
+          <div class="dc-head">
+            <div><a class="dc-title" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
+              <div class="dc-sub mono">{{ row.sku }}</div></div>
+            <span class="rank-no">{{ forloop.counter }}</span>
+          </div>
+          <dl class="dc-rows">
+            <dt>Units sold</dt><dd>{{ row.units|qty }}</dd>
+            <dt>Revenue</dt><dd class="fw-bold">{{ row.revenue|cedis }}</dd>
+            {% if is_owner %}<dt>Est. profit</dt><dd>{{ row.profit|cedis }}</dd>{% endif %}
+          </dl>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><span>Slow movers — stock sitting on the shelf</span></div>
+  <div class="card-body p-0">
+    <div class="table-wrap">
+      <table class="table">
+        <caption class="visually-hidden">Products with stock that sold little in this period</caption>
+        <thead><tr><th scope="col">Product</th><th scope="col">Category</th>
+                   <th scope="col" class="text-end">Sold in period</th>
+                   <th scope="col" class="text-end">Still in stock</th>
+                   {% if is_owner %}<th scope="col" class="text-end">Money tied up</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for row in slow %}
+            <tr>
+              <td><a class="cell-primary" href="{{ row.product.get_absolute_url }}">{{ row.product.name }}</a>
+                <div class="cell-sub mono">{{ row.product.sku }}</div></td>
+              <td class="cell-sub">{{ row.product.category.name }}</td>
+              <td class="text-end tnum {% if not row.units %}text-muted-warm{% endif %}">
+                {% if row.units %}{{ row.units|qty }}{% else %}None{% endif %}</td>
+              <td class="text-end tnum">{{ row.product.display_stock }}</td>
+              {% if is_owner %}<td class="text-end tnum">{{ row.product.stock_value|cedis }}</td>{% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-center text-muted-warm py-4">Nothing is sitting still — good news.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

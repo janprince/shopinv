@@ -1,0 +1,51 @@
+{% load ui %}
+{% comment %}
+Period shortcuts keep every other active filter: query_replace rewrites only the
+date keys, so choosing "This week" never silently drops a product or category
+the user already picked.
+{% endcomment %}
+<div class="filter-bar no-print">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-auto">
+      <div class="chip-row" role="group" aria-label="Date range shortcuts">
+        <a class="chip {% if period == 'today' %}is-active{% endif %}"
+           {% if period == 'today' %}aria-current="true"{% endif %}
+           href="{% query_replace period='today' from='' to='' %}">Today</a>
+        <a class="chip {% if period == 'week' %}is-active{% endif %}"
+           {% if period == 'week' %}aria-current="true"{% endif %}
+           href="{% query_replace period='week' from='' to='' %}">This week</a>
+        <a class="chip {% if period == 'month' %}is-active{% endif %}"
+           {% if period == 'month' %}aria-current="true"{% endif %}
+           href="{% query_replace period='month' from='' to='' %}">This month</a>
+        <a class="chip {% if period == 'last30' %}is-active{% endif %}"
+           {% if period == 'last30' %}aria-current="true"{% endif %}
+           href="{% query_replace period='last30' from='' to='' %}">Last 30 days</a>
+        <a class="chip {% if period == 'year' %}is-active{% endif %}"
+           {% if period == 'year' %}aria-current="true"{% endif %}
+           href="{% query_replace period='year' from='' to='' %}">This year</a>
+      </div>
+    </div>
+
+    <form method="get" class="col-12 col-lg row g-2 align-items-end m-0">
+      {# Carry the non-date filters through so applying dates does not reset them. #}
+      {% for key, values in request.GET.lists %}
+        {% if key != "from" and key != "to" and key != "period" and key != "page" %}
+          {% for value in values %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      <div class="col-6 col-lg-4">
+        <label class="form-label" for="filter-from">From</label>
+        <input type="date" class="form-control" id="filter-from" name="from" value="{{ start|date:'Y-m-d' }}">
+      </div>
+      <div class="col-6 col-lg-4">
+        <label class="form-label" for="filter-to">To</label>
+        <input type="date" class="form-control" id="filter-to" name="to" value="{{ end|date:'Y-m-d' }}">
+      </div>
+      <div class="col-12 col-lg-auto">
+        <button type="submit" class="btn btn-quiet btn-block">Apply dates</button>
+      </div>
+    </form>
+  </div>
+</div>
