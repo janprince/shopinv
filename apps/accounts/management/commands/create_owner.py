@@ -49,6 +49,18 @@ class Command(BaseCommand):
             email = os.environ.get("OWNER_EMAIL", "")
             password = os.environ.get("OWNER_PASSWORD", "")
             if not username or not password:
+                # --skip-if-exists marks this as a deploy hook. Failing the whole
+                # deployment because the operator has not set the variables yet
+                # would be worse than saying so and carrying on.
+                if options["skip_if_exists"]:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            "No owner exists yet and OWNER_USERNAME / OWNER_PASSWORD are "
+                            "not set, so none was created. Set them and redeploy, or run "
+                            "`python manage.py create_owner` against this environment."
+                        )
+                    )
+                    return
                 raise CommandError("OWNER_USERNAME and OWNER_PASSWORD must both be set.")
         else:
             username = options["username"] or self._ask("Username")

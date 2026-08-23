@@ -48,15 +48,43 @@ if not SECRET_KEY:
 # hostnames, or temporary tunnels. Django's host validation is still enforced in
 # production, where the allow-list must be supplied explicitly.
 ALLOWED_HOSTS = ["*"] if DEBUG else env_list("DJANGO_ALLOWED_HOSTS")
-
-# Render supplies the external hostname at runtime.
-RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
-if RENDER_EXTERNAL_HOSTNAME:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
+
+def _hostname(value: str) -> str:
+    """Platforms are inconsistent about whether they include the scheme."""
+    return value.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+
+
+def trust_host(host: str, *, public: bool = True) -> None:
+    """Allow a host, and trust form posts from it when it is publicly routable."""
+    host = _hostname(host)
+    if not host:
+        return
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+    origin = f"https://{host}"
+    if public and origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
+
+# The host the app answers on is only known at runtime on most platforms, so
+# read whichever variable the current one publishes rather than making the
+# operator copy it into DJANGO_ALLOWED_HOSTS by hand.
+for _var in ("RAILWAY_PUBLIC_DOMAIN", "RENDER_EXTERNAL_HOSTNAME"):
+    trust_host(os.environ.get(_var, ""))
+
+# Health probes and container checks arrive over the private network with their
+# own Host header, and never over HTTPS, so they are allowed but not trusted as
+# CSRF origins.
+if os.environ.get("RAILWAY_ENVIRONMENT_NAME") or os.environ.get("RAILWAY_PROJECT_ID"):
+    for _internal in (
+        os.environ.get("RAILWAY_PRIVATE_DOMAIN", ""),
+        "healthcheck.railway.app",
+        "localhost",
+        "127.0.0.1",
+    ):
+        trust_host(_internal, public=False)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
