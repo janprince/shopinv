@@ -32,6 +32,8 @@ RUN DJANGO_DEBUG=false \
     DATABASE_URL=postgres://build/placeholder \
     python manage.py collectstatic --noinput --clear
 
+COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 # Run as an unprivileged user.
 RUN useradd --create-home --shell /usr/sbin/nologin shopkeeper \
     && mkdir -p /app/staticfiles /app/media \
@@ -46,10 +48,14 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -fsS "http://127.0.0.1:${PORT}/healthz/" || exit 1
 
+# The entrypoint migrates, ensures the owner, then execs this command, so
+# gunicorn still ends up as PID 1 and receives SIGTERM directly.
+ENTRYPOINT ["docker-entrypoint.sh"]
+
 # Shell form on purpose: $PORT has to expand at container start, and the JSON
-# array form does not run a shell. `exec` hands the process over so gunicorn is
-# PID 1 and receives SIGTERM directly — without it the platform's shutdown
-# signal stops at /bin/sh and workers are killed rather than drained.
+# array form does not run a shell. The inner `exec` matters too: without it the
+# shell stays PID 1, SIGTERM never reaches gunicorn, and workers are killed
+# rather than drained.
 CMD exec gunicorn config.wsgi:application \
       --bind "0.0.0.0:${PORT}" \
       --workers "${WEB_CONCURRENCY:-3}" \
