@@ -3,7 +3,7 @@
  * sale until the server has confirmed it, and pretending otherwise would be
  * worse than an honest error message.
  */
-const CACHE = "jcf-shell-v2";
+const CACHE = "jcf-shell-v3";
 const SHELL = [
   "{% static 'css/fonts.css' %}",
   "{% static 'css/theme.css' %}",
@@ -38,7 +38,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Static assets: cache first, they are hashed in production.
+  // Static assets: cache first. Bump CACHE whenever the shell assets change so
+  // an installed till does not keep yesterday's interface indefinitely.
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(request).then((hit) => hit || fetch(request).then((response) => {

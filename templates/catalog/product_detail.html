@@ -87,7 +87,7 @@
 <div class="row g-3">
   <div class="col-12 col-xl-7">
     {# ---------- Batches ---------- #}
-    <div class="card mb-3">
+    <div class="card mb-3 table-responsive-cards">
       <div class="card-header"><span>Stock on hand, batch by batch</span></div>
       <div class="card-body p-0">
         {% if batches %}
@@ -120,6 +120,23 @@
               </tbody>
             </table>
           </div>
+          <div class="data-cards p-2">
+            {% for batch in batches %}
+              <div class="data-card">
+                <div class="dc-head">
+                  <div><span class="dc-title">{{ batch.batch_number|default:"Unnumbered batch" }}</span>
+                    <div class="dc-sub">Received {{ batch.received_at|date:"j M Y" }} · {{ batch.supplier.name|default:"No supplier" }}</div></div>
+                  <strong class="tnum">{{ batch.quantity_remaining|qty }} {{ product.unit_label }}</strong>
+                </div>
+                <dl class="dc-rows">
+                  <dt>Source</dt><dd>{{ batch.get_source_display }}</dd>
+                  <dt>Received</dt><dd>{{ batch.quantity_received|qty }}</dd>
+                  <dt>Expires</dt><dd>{% if batch.expiry_date %}{{ batch.expiry_date|date:"j M Y" }}{% else %}Does not expire{% endif %}</dd>
+                  {% if is_owner %}<dt>Unit cost</dt><dd>{{ batch.unit_cost|cedis }}</dd>{% endif %}
+                </dl>
+              </div>
+            {% endfor %}
+          </div>
         {% else %}
           {% include "partials/empty_state.html" with glyph="truck" title="Nothing in stock" body="Receive stock to put this product back on the shelf." action_url="/stock/receive/" action_label="Receive stock" %}
         {% endif %}
@@ -127,15 +144,15 @@
     </div>
 
     {# ---------- Movements ---------- #}
-    <div class="card">
+    <div class="card table-responsive-cards">
       <div class="card-header">
-        <span>Everything that changed the stock</span>
+        <span>Recent stock changes</span>
         <a href="{% url 'inventory:movements' %}?product={{ product.pk }}&period=year">Full history</a>
       </div>
       <div class="card-body p-0">
         <div class="table-wrap">
           <table class="table">
-            <caption class="visually-hidden">The 20 most recent stock movements for {{ product.name }}</caption>
+            <caption class="visually-hidden">The 10 most recent stock movements for {{ product.name }}</caption>
             <thead>
               <tr><th scope="col">When</th><th scope="col">What happened</th>
                   <th scope="col" class="text-end">Change</th><th scope="col" class="text-end">Left after</th>
@@ -166,6 +183,24 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="data-cards p-2">
+          {% for movement in movements %}
+            <div class="data-card">
+              <div class="dc-head">
+                <div><span class="dc-title">{{ movement.get_movement_type_display }}</span>
+                  <div class="dc-sub">{{ movement.created_at|date:"j M Y, H:i" }} · {{ movement.user.display_name|default:"—" }}</div></div>
+                <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">{{ movement.signed_quantity }}</span>
+              </div>
+              <dl class="dc-rows">
+                <dt>Stock after</dt><dd>{{ movement.quantity_after|qty }}</dd>
+                {% if movement.reason %}<dt>Reason</dt><dd>{{ movement.reason }}</dd>{% endif %}
+                {% if movement.sale_id %}<dt>Sale</dt><dd><a class="mono" href="{{ movement.sale.get_absolute_url }}">{{ movement.sale.sale_number }}</a></dd>{% endif %}
+              </dl>
+            </div>
+          {% empty %}
+            <p class="text-muted-warm p-2 mb-0">No stock changes recorded yet.</p>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -216,7 +251,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card table-responsive-cards">
       <div class="card-header"><span>Recent sales</span></div>
       <div class="card-body p-0">
         <div class="table-wrap">
@@ -237,6 +272,20 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="data-cards p-2">
+          {% for item in recent_sales %}
+            <a class="data-card" href="{{ item.sale.get_absolute_url }}">
+              <div class="dc-head mb-0">
+                <div><span class="dc-title mono">{{ item.sale.sale_number }}</span>
+                  <div class="dc-sub">{{ item.sale.completed_at|date:"j M Y, H:i" }}</div></div>
+                <span class="text-end"><strong class="tnum d-block">{{ item.line_total|cedis }}</strong>
+                  <span class="dc-sub">{{ item.display_quantity }} sold</span></span>
+              </div>
+            </a>
+          {% empty %}
+            <p class="text-muted-warm p-2 mb-0">Not sold yet.</p>
+          {% endfor %}
         </div>
       </div>
     </div>

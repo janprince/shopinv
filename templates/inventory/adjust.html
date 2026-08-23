@@ -74,7 +74,7 @@
     </div>
   </form>
 {% else %}
-  <form method="post" novalidate>
+  <form method="post" novalidate data-dirty-form>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
 

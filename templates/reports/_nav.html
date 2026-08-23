@@ -1,5 +1,20 @@
 {% load ui %}
-<div class="chip-row mb-3 no-print">
+<nav class="report-nav no-print" aria-label="Reports">
+<div class="report-nav-mobile">
+  <label class="visually-hidden" for="report-switcher">Choose a report</label>
+  <select class="form-select" id="report-switcher" data-navigate-select aria-label="Choose a report">
+    <option value="{% url 'reports:index' %}{% query_replace %}" {% if active == 'index' %}selected{% endif %}>Overview</option>
+    <option value="{% url 'reports:sales' %}{% query_replace %}" {% if active == 'sales' %}selected{% endif %}>Sales over time</option>
+    <option value="{% url 'reports:products' %}{% query_replace %}" {% if active == 'products' %}selected{% endif %}>By product</option>
+    <option value="{% url 'reports:categories' %}{% query_replace %}" {% if active == 'categories' %}selected{% endif %}>By category</option>
+    <option value="{% url 'reports:payments' %}{% query_replace %}" {% if active == 'payments' %}selected{% endif %}>Payments</option>
+    <option value="{% url 'reports:inventory' %}" {% if active == 'inventory' %}selected{% endif %}>Inventory</option>
+    <option value="{% url 'reports:expiry' %}" {% if active == 'expiry' %}selected{% endif %}>Expiry</option>
+    <option value="{% url 'reports:adjustments' %}{% query_replace %}" {% if active == 'adjustments' %}selected{% endif %}>Adjustments</option>
+    {% if is_owner %}<option value="{% url 'reports:profit' %}{% query_replace %}" {% if active == 'profit' %}selected{% endif %}>Profit</option>{% endif %}
+  </select>
+</div>
+<div class="chip-row report-nav-desktop mb-3">
   <a class="chip {% if active == 'index' %}is-active{% endif %}" href="{% url 'reports:index' %}{% query_replace %}">Overview</a>
   <a class="chip {% if active == 'sales' %}is-active{% endif %}" href="{% url 'reports:sales' %}{% query_replace %}">Sales</a>
   <a class="chip {% if active == 'products' %}is-active{% endif %}" href="{% url 'reports:products' %}{% query_replace %}">By product</a>
@@ -12,3 +27,4 @@
     <a class="chip {% if active == 'profit' %}is-active{% endif %}" href="{% url 'reports:profit' %}{% query_replace %}">Profit</a>
   {% endif %}
 </div>
+</nav>

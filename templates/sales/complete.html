@@ -7,7 +7,7 @@
 {% block content %}
 <div class="success-hero mb-3">
   <div class="tick">{% icon "check" 28 %}</div>
-  <p class="label-caps mb-1">Sale recorded</p>
+  <h1 class="label-caps mb-1">Sale recorded</h1>
   <p class="amount mb-1">{{ sale.total|cedis }}</p>
   <p class="mb-0 text-muted-warm">
     <span class="mono">{{ sale.sale_number }}</span> · {{ sale.get_payment_method_display }}

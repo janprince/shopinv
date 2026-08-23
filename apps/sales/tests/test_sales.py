@@ -415,6 +415,14 @@ class PointOfSaleViewTests(TestCase):
         self.assertContains(response, 'data-autofocus="true"')
         self.assertContains(response, 'id="pos-search"')
 
+    def test_the_till_loading_and_confirmation_states_are_accessible(self):
+        response = self.client.get(reverse("sales:pos"))
+        self.assertContains(response, 'id="search-spinner"')
+        self.assertContains(response, 'aria-hidden="true" hidden')
+        self.assertContains(response, 'id="sale-confirm-modal"')
+        self.assertContains(response, 'aria-labelledby="sale-confirm-title"')
+        self.assertContains(response, '<h1 class="visually-hidden">New sale</h1>', html=True)
+
     def test_a_sale_posts_through_and_lands_on_the_success_page(self):
         response = self.client.post(reverse("sales:pos"), self._payload())
         sale = Sale.objects.get()

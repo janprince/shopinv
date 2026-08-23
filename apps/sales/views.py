@@ -23,7 +23,7 @@ from .forms import ReverseSaleForm, SaleForm
 from .models import PaymentMethod, Sale, SaleStatus
 from .services import SaleError, complete_sale, reverse_sale
 
-PAGE_SIZE = 25
+PAGE_SIZE = 15
 SEARCH_LIMIT = 24
 
 

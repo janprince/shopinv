@@ -15,7 +15,7 @@
   </div>
 </div>
 
-<form method="post" data-guard-submit novalidate>
+<form method="post" data-guard-submit data-dirty-form novalidate>
   {% csrf_token %}
   {% include "partials/form_errors.html" %}
 

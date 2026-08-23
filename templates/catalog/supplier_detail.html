@@ -17,7 +17,7 @@
 
 <div class="row g-3">
   <div class="col-12 col-lg-4">
-    <div class="card">
+    <div class="card table-responsive-cards">
       <div class="card-header"><span>Contact</span></div>
       <div class="card-body">
         <dl class="row mb-0" style="font-size: 0.875rem;">
@@ -42,7 +42,7 @@
 
   <div class="col-12 col-lg-8">
     <div class="card">
-      <div class="card-header"><span>Deliveries received</span></div>
+      <div class="card-header"><span>Recent deliveries <span class="cell-sub">{{ batches|length }} of {{ totals.deliveries }}</span></span></div>
       <div class="card-body p-0">
         <div class="table-wrap">
           <table class="table">
@@ -67,6 +67,24 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="data-cards p-2">
+          {% for batch in batches %}
+            <div class="data-card">
+              <div class="dc-head">
+                <div><a class="dc-title" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a>
+                  <div class="dc-sub">{{ batch.received_at|date:"j M Y" }} · {{ batch.received_by.display_name|default:"—" }}</div></div>
+                <strong class="tnum">{{ batch.quantity_received|qty }} {{ batch.product.unit_label }}</strong>
+              </div>
+              <dl class="dc-rows">
+                <dt>Batch</dt><dd class="mono">{{ batch.batch_number|default:"—" }}</dd>
+                <dt>Remaining</dt><dd>{{ batch.quantity_remaining|qty }}</dd>
+                {% if is_owner %}<dt>Unit cost</dt><dd>{{ batch.unit_cost|cedis }}</dd>{% endif %}
+              </dl>
+            </div>
+          {% empty %}
+            <p class="text-muted-warm p-2 mb-0">No deliveries recorded yet.</p>
+          {% endfor %}
         </div>
       </div>
     </div>

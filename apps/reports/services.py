@@ -307,18 +307,18 @@ def dashboard_metrics(*, warning_days: int, for_owner: bool) -> dict:
         "yesterday": sales_summary(yesterday, yesterday),
         "week": sales_summary(week_start, today),
         "month": sales_summary(month_start, today),
-        "low_stock": low_stock_products(limit=8),
+        "low_stock": low_stock_products(limit=5),
         "low_stock_count": Product.objects.active().needs_restock().count(),
         "out_of_stock_count": Product.objects.active().out_of_stock().count(),
-        "expiring": expiring_batches(warning_days, limit=8),
+        "expiring": expiring_batches(warning_days, limit=5),
         "expiring_count": expiring_batches(warning_days).count(),
         "expired_count": StockBatch.objects.expired().count(),
         "recent_sales": (
             Sale.objects.select_related("user")
             .annotate(line_count=Count("items"))
-            .order_by("-completed_at")[:6]
+            .order_by("-completed_at")[:5]
         ),
-        "recent_movements": (StockMovement.objects.with_related().order_by("-created_at")[:8]),
+        "recent_movements": (StockMovement.objects.with_related().order_by("-created_at")[:5]),
     }
 
     change = None

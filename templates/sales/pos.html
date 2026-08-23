@@ -11,6 +11,7 @@
 {% endblock %}
 
 {% block content %}
+<h1 class="visually-hidden">New sale</h1>
 <form method="post" id="sale-form" novalidate>
   {% csrf_token %}
   {{ form.cart.as_hidden }}
@@ -32,7 +33,7 @@
                hx-target="#pos-results" hx-indicator="#search-spinner"
                aria-describedby="search-hint" aria-controls="pos-results">
         <span id="search-spinner" class="htmx-indicator position-absolute end-0 top-50 translate-middle-y me-3"
-              role="status" aria-live="polite">
+              role="status" aria-live="polite" aria-hidden="true" hidden>
           <span class="spinner-border spinner-border-sm text-muted-warm" aria-hidden="true"></span>
           <span class="visually-hidden">Searching</span>
         </span>
@@ -44,7 +45,7 @@
       <div id="pos-results" aria-live="polite" aria-busy="false">
         {% if quick_picks %}
           <p class="label-caps mb-2">Quick picks</p>
-          <div class="pos-results">
+          <div class="pos-results quick-picks">
             {% for product in quick_picks %}
               <button type="button" class="pos-result" data-add-product
                       data-id="{{ product.pk }}" data-name="{{ product.name }}"
@@ -170,6 +171,30 @@
   </span>
   <span class="mc-go">Review sale {% icon "arrow-right" 15 %}</span>
 </button>
+
+<div class="modal fade" id="sale-confirm-modal" tabindex="-1" aria-labelledby="sale-confirm-title" aria-describedby="sale-confirm-help" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="sale-confirm-title">Complete this sale?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="sale-confirm-help" class="mb-3">Check the amount and payment before recording the sale.</p>
+        <dl class="confirm-summary mb-0">
+          <dt>Items</dt><dd id="confirm-items">—</dd>
+          <dt>Total</dt><dd id="confirm-total" class="tnum fw-semibold">—</dd>
+          <dt>Payment</dt><dd id="confirm-payment">—</dd>
+          <dt id="confirm-change-label" hidden>Change due</dt><dd id="confirm-change" class="tnum fw-semibold" hidden>—</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-quiet" data-bs-dismiss="modal">Go back</button>
+        <button type="button" class="btn btn-primary" id="confirm-complete-sale">Complete sale</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 {# The cart the server received back after a failed submission, so nothing is lost. #}
 <script id="initial-cart" type="application/json">{{ cart_json|safe }}</script>

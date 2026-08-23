@@ -67,6 +67,32 @@ class LoginTests(TestCase):
         self.assertIn(reverse("accounts:login"), response["Location"])
 
 
+class ProfileExperienceTests(TestCase):
+    def setUp(self):
+        self.user = make_user(username="esi")
+        self.client.force_login(self.user)
+
+    def test_password_change_has_a_focused_get_page(self):
+        response = self.client.get(reverse("accounts:change_password"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/change_password.html")
+        self.assertContains(response, "Change password")
+        self.assertContains(response, 'name="current_password"')
+
+    def test_password_change_post_still_updates_the_password(self):
+        response = self.client.post(
+            reverse("accounts:change_password"),
+            {
+                "current_password": DEFAULT_PASSWORD,
+                "new_password1": "new-shop-pass-2026",
+                "new_password2": "new-shop-pass-2026",
+            },
+        )
+        self.assertRedirects(response, reverse("accounts:profile"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("new-shop-pass-2026"))
+
+
 class RolePermissionTests(TestCase):
     """The rule lives on the server. Hiding a link is not a permission."""
 

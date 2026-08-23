@@ -15,7 +15,9 @@
   </div>
 </div>
 
-<div class="filter-bar no-print">
+<details class="filter-disclosure no-print" data-mobile-collapse open>
+<summary><span>Filter products</span><span class="cell-sub">Search, category, stock</span></summary>
+<div class="filter-bar">
   <form method="get" class="row g-2 align-items-end">
     <div class="col-12 col-md-4">
       <label class="form-label" for="f-q">Search</label>
@@ -64,6 +66,7 @@
     </div>
   </form>
 </div>
+</details>
 
 {% if products %}
   <div class="card table-responsive-cards">
@@ -122,30 +125,18 @@
         </table>
       </div>
 
-      <div class="data-cards p-2">
+      <div class="data-cards product-mobile-list p-2">
         {% for product in products %}
-          <div class="data-card">
-            <div class="dc-head">
-              <div class="min-w-0">
-                <a class="dc-title" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                <div class="dc-sub"><span class="mono">{{ product.sku }}</span> · {{ product.category.name }}</div>
-              </div>
-              <div class="d-flex flex-column gap-1 align-items-end">
-                {% stock_badge product %}
-                {% expiry_badge product.expiry_flag %}
-                {% active_badge product.is_active %}
-              </div>
-            </div>
-            <dl class="dc-rows">
-              <dt>On hand</dt><dd class="fw-bold">{{ product.display_stock }}</dd>
-              <dt>Warn below</dt><dd>{{ product.minimum_stock|qty }} {{ product.unit_label }}</dd>
-              <dt>Selling price</dt><dd>{{ product.selling_price|cedis }}</dd>
-            </dl>
-            <div class="dc-actions">
-              <a class="btn btn-sm btn-quiet" href="{% url 'inventory:receive' %}?product={{ product.pk }}">Receive stock</a>
-              <a class="btn btn-sm btn-quiet" href="{% url 'catalog:product_edit' product.pk %}">Edit</a>
-            </div>
-          </div>
+          <a class="product-mobile-row" href="{{ product.get_absolute_url }}">
+            <span class="min-w-0">
+              <span class="dc-title d-block">{{ product.name }}</span>
+              <span class="dc-sub d-block"><span class="mono">{{ product.sku }}</span> · {{ product.category.name }}</span>
+            </span>
+            <span class="product-mobile-stock">
+              <strong class="tnum">{{ product.display_stock }}</strong>
+              {% stock_badge product %}
+            </span>
+          </a>
         {% endfor %}
       </div>
     </div>

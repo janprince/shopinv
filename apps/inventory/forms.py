@@ -41,7 +41,14 @@ class ReceiveStockForm(forms.Form):
         label="Product",
         queryset=Product.objects.none(),
         empty_label="Choose a product…",
-        widget=forms.Select(attrs={**SELECT, "data-autofocus": "true"}),
+        widget=forms.Select(
+            attrs={
+                **SELECT,
+                "data-autofocus": "true",
+                "data-searchable-select": "true",
+                "data-search-label": "Search products by name or code",
+            }
+        ),
     )
     quantity = forms.DecimalField(
         label="Quantity received",
@@ -150,7 +157,14 @@ class AdjustStockForm(forms.Form):
         label="Product",
         queryset=Product.objects.none(),
         empty_label="Choose a product…",
-        widget=forms.Select(attrs={**SELECT, "data-autofocus": "true"}),
+        widget=forms.Select(
+            attrs={
+                **SELECT,
+                "data-autofocus": "true",
+                "data-searchable-select": "true",
+                "data-search-label": "Search products by name or code",
+            }
+        ),
     )
     movement_type = forms.ChoiceField(
         label="What happened?",

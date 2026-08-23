@@ -17,7 +17,9 @@
 
 {% include "partials/period_filter.html" %}
 
-<div class="filter-bar no-print">
+<details class="filter-disclosure no-print" data-mobile-collapse open>
+<summary><span>More filters</span><span class="cell-sub">Product, change, supplier, staff</span></summary>
+<div class="filter-bar">
   <form method="get" class="row g-2 align-items-end">
     <input type="hidden" name="from" value="{{ start|date:'Y-m-d' }}">
     <input type="hidden" name="to" value="{{ end|date:'Y-m-d' }}">
@@ -59,6 +61,7 @@
     </div>
   </form>
 </div>
+</details>
 
 {% if movements %}
   <div class="card table-responsive-cards">
@@ -120,11 +123,17 @@
             </div>
             <dl class="dc-rows">
               <dt>What happened</dt><dd>{{ movement.get_movement_type_display }}</dd>
-              <dt>Direction</dt><dd>{{ movement.direction_label }}</dd>
               <dt>Stock after</dt><dd>{{ movement.quantity_after|qty }}</dd>
-              {% if movement.reason %}<dt>Reason</dt><dd class="text-start">{{ movement.reason }}</dd>{% endif %}
               <dt>Who</dt><dd>{{ movement.user.display_name|default:"—" }}</dd>
             </dl>
+            {% if movement.reason or movement.sale_id or movement.batch_id %}
+              <details class="dc-details">
+                <summary>Reason and reference</summary>
+                {% if movement.reason %}<p>{{ movement.reason }}</p>{% endif %}
+                {% if movement.sale_id %}<a class="mono" href="{{ movement.sale.get_absolute_url }}">{{ movement.sale.sale_number }}</a>
+                {% elif movement.batch_id and movement.batch.batch_number %}<span class="mono">{{ movement.batch.batch_number }}</span>{% endif %}
+              </details>
+            {% endif %}
           </div>
         {% endfor %}
       </div>
