@@ -70,7 +70,7 @@
     </div>
   </form>
 {% else %}
-  <form method="post" novalidate>
+  <form method="post" novalidate data-dirty-form>
     {% csrf_token %}
     {% include "partials/form_errors.html" %}
 
@@ -84,9 +84,10 @@
         </div>
       </div>
 
-      <div class="form-section">
-        <h2 class="section-title">Where did it come from?</h2>
-        <p class="section-hint">Optional, but it makes returns and price checks much easier later.</p>
+      <details class="form-section optional-fields">
+        <summary class="section-title">Add supplier, batch or expiry details <span class="opt">optional</span></summary>
+        <div class="optional-fields-body">
+        <p class="section-hint">Useful for returns, expiry checks and tracing a delivery later.</p>
         {% include "partials/field.html" with field=form.supplier %}
         <a class="btn btn-sm btn-quiet mb-3" href="{% url 'catalog:supplier_create' %}?next=receive">
           {% icon "plus" 14 %} Add a new supplier
@@ -98,7 +99,8 @@
         {% include "partials/field.html" with field=form.received_on %}
         {% include "partials/field.html" with field=form.notes %}
         {% include "partials/field.html" with field=form.update_cost_price %}
-      </div>
+        </div>
+      </details>
     </div></div>
 
     <div class="form-actions">

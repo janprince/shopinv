@@ -23,11 +23,18 @@
   </div>
 {% endif %}
 
-<form method="post" data-guard-submit novalidate autocomplete="off">
+<form method="post" data-guard-submit data-dirty-form novalidate autocomplete="off">
   {% csrf_token %}
   {% include "partials/form_errors.html" %}
 
   <div class="card"><div class="card-body">
+    <div class="form-section">
+      <h2 class="section-title">Access</h2>
+      <p class="section-hint">Choose what this person can see and change before entering their details.</p>
+      {% include "partials/field.html" with field=form.role %}
+      {% include "partials/field.html" with field=form.is_active %}
+    </div>
+
     <div class="form-section">
       <h2 class="section-title">Who are they?</h2>
       <div class="row">
@@ -49,11 +56,6 @@
       </div>
     </div>
 
-    <div class="form-section">
-      <h2 class="section-title">Access</h2>
-      {% include "partials/field.html" with field=form.role %}
-      {% include "partials/field.html" with field=form.is_active %}
-    </div>
   </div></div>
 
   <div class="form-actions">

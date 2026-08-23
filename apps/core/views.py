@@ -94,7 +94,7 @@ def audit_log(request):
     if term:
         events = events.filter(summary__icontains=term)
 
-    paginator = Paginator(events, 40)
+    paginator = Paginator(events, 10)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     return render(

@@ -86,7 +86,7 @@
 </div>
 
 {% if is_owner %}
-  <div class="stat-grid mb-3">
+  <div class="stat-grid owner-secondary-stats mb-3" tabindex="0" role="region" aria-label="This week, this month and stock value">
     <a class="stat" href="{% url 'reports:sales' %}?period=week">
       <span class="stat-icon is-info" aria-hidden="true">{% icon "calendar" 20 %}</span>
       <span class="stat-body">
@@ -122,9 +122,9 @@
   </div>
 {% endif %}
 
-<div class="row g-3">
+<div class="row g-3 dashboard-panels">
   {# ---------- Needs attention ---------- #}
-  <div class="col-12 col-xl-6">
+  <div class="col-12 col-xl-6 dashboard-low">
     <div class="card h-100 panel-flush">
       <div class="card-header">
         <span>Running low</span>
@@ -132,7 +132,7 @@
       </div>
       <div class="card-body">
         {% if m.low_stock %}
-          <div class="table-wrap">
+          <div class="table-wrap dashboard-table is-low">
             <table class="table">
               <caption class="visually-hidden">Products at or below their low-stock level</caption>
               <thead>
@@ -162,7 +162,7 @@
   </div>
 
   {# ---------- Expiring ---------- #}
-  <div class="col-12 col-xl-6">
+  <div class="col-12 col-xl-6 dashboard-expiry">
     <div class="card h-100 panel-flush">
       <div class="card-header">
         <span>Expiring soon</span>
@@ -170,7 +170,7 @@
       </div>
       <div class="card-body">
         {% if m.expiring %}
-          <div class="table-wrap">
+          <div class="table-wrap dashboard-table is-expiry">
             <table class="table">
               <caption class="visually-hidden">Batches approaching their expiry date</caption>
               <thead>
@@ -202,7 +202,7 @@
   </div>
 
   {# ---------- Recent sales ---------- #}
-  <div class="col-12 col-xl-6">
+  <div class="col-12 col-xl-6 dashboard-sales">
     <div class="card h-100 panel-flush">
       <div class="card-header">
         <span>Recent sales</span>
@@ -210,7 +210,7 @@
       </div>
       <div class="card-body">
         {% if m.recent_sales %}
-          <div class="table-wrap">
+          <div class="table-wrap dashboard-table is-sales">
             <table class="table">
               <caption class="visually-hidden">The most recent sales</caption>
               <thead>
@@ -240,7 +240,7 @@
   </div>
 
   {# ---------- Stock activity ---------- #}
-  <div class="col-12 col-xl-6">
+  <div class="col-12 col-xl-6 dashboard-activity">
     <div class="card h-100">
       <div class="card-header">
         <span>Latest stock changes</span>

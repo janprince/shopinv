@@ -10,7 +10,7 @@
     .sheet { background: #fff; max-width: 320px; margin: 0 auto; padding: 14px 16px; border-radius: 8px; }
     .c { text-align: center; }
     .r { text-align: right; }
-    .shop { font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+    .shop { font-size: 15px; font-weight: 700; letter-spacing: .04em; margin: 0; }
     .muted { color: #444; font-size: 11px; }
     hr { border: 0; border-top: 1px dashed #999; margin: 8px 0; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -35,7 +35,7 @@
 <body>
   <div class="sheet">
     <div class="c">
-      <div class="shop">{{ shop.shop_name|upper }}</div>
+      <h1 class="shop">{{ shop.shop_name|upper }}</h1>
       {% if shop.address %}<div class="muted">{{ shop.address|linebreaksbr }}</div>{% endif %}
       {% if shop.phone %}<div class="muted">Tel {{ shop.phone }}</div>{% endif %}
     </div>

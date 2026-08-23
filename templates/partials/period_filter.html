@@ -4,7 +4,9 @@ Period shortcuts keep every other active filter: query_replace rewrites only the
 date keys, so choosing "This week" never silently drops a product or category
 the user already picked.
 {% endcomment %}
-<div class="filter-bar no-print">
+<details class="filter-disclosure period-disclosure no-print" data-mobile-collapse open>
+  <summary><span>Period</span><strong>{{ start|date:"j M" }} – {{ end|date:"j M Y" }}</strong></summary>
+<div class="filter-bar">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-lg-auto">
       <div class="chip-row" role="group" aria-label="Date range shortcuts">
@@ -49,3 +51,4 @@ the user already picked.
     </form>
   </div>
 </div>
+</details>

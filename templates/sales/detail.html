@@ -37,7 +37,7 @@
 
 <div class="row g-3">
   <div class="col-12 col-lg-7">
-    <div class="card panel-flush mb-3">
+    <div class="card panel-flush mb-3 table-responsive-cards">
       <div class="card-header"><span>Items</span></div>
       <div class="card-body">
         <div class="table-wrap">
@@ -69,10 +69,27 @@
             </tbody>
           </table>
         </div>
+        <div class="data-cards p-2">
+          {% for item in sale.items.all %}
+            <div class="data-card">
+              <div class="dc-head">
+                <div><a class="dc-title" href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
+                  <div class="dc-sub mono">{{ item.sku }}</div></div>
+                <strong class="tnum">{{ item.line_total|cedis }}</strong>
+              </div>
+              <dl class="dc-rows">
+                <dt>Quantity</dt><dd>{{ item.display_quantity }}</dd>
+                <dt>Unit price</dt><dd>{{ item.unit_price|cedis }}</dd>
+                {% if is_owner %}<dt>Unit cost</dt><dd>{{ item.unit_cost|cedis }}</dd>
+                <dt>Est. profit</dt><dd>{{ item.gross_profit|cedis }}</dd>{% endif %}
+              </dl>
+            </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card table-responsive-cards">
       <div class="card-header"><span>Stock movements from this sale</span>
         <a href="{% url 'inventory:movements' %}?q={{ sale.sale_number }}">Open in ledger</a></div>
       <div class="card-body p-0">
@@ -98,6 +115,21 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="data-cards p-2">
+          {% for movement in movements %}
+            <div class="data-card">
+              <div class="dc-head">
+                <div><span class="dc-title">{{ movement.product.name }}</span>
+                  <div class="dc-sub">{{ movement.created_at|date:"j M, H:i" }}{% if movement.batch %} · {{ movement.batch.display_label }}{% endif %}</div></div>
+                <span class="qty-delta {% if movement.is_increase %}is-up{% else %}is-down{% endif %}">{{ movement.signed_quantity }}</span>
+              </div>
+              <dl class="dc-rows">
+                <dt>Change</dt><dd>{{ movement.get_movement_type_display }}</dd>
+                <dt>Stock after</dt><dd>{{ movement.quantity_after|qty }}</dd>
+              </dl>
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>

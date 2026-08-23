@@ -26,7 +26,7 @@
 
   <div class="app-main">
     <header class="topbar no-print">
-      <h1>{% block page_title %}{% endblock %}</h1>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
       <div class="ms-auto d-flex align-items-center gap-2">
         {% block topbar_actions %}{% endblock %}
       </div>
@@ -50,7 +50,7 @@
 {% endif %}
 
 <div id="connection-banner" class="conn-banner no-print" role="status" aria-live="polite" hidden>
-  {% icon "wifi-off" 16 %}<span id="connection-text">No internet connection</span>
+  {% icon "wifi-off" 16 %}<span id="connection-text">No internet connection. Keep this page open; unsaved form changes have not been saved.</span>
 </div>
 
 <script src="{% static 'vendor/bootstrap.bundle.min.js' %}" defer></script>

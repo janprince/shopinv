@@ -19,6 +19,7 @@
 
   var el = {
     search: document.getElementById("pos-search"),
+    searchSpinner: document.getElementById("search-spinner"),
     results: document.getElementById("pos-results"),
     lines: document.getElementById("cart-lines"),
     empty: document.getElementById("cart-empty"),
@@ -47,11 +48,20 @@
     offlineNote: document.getElementById("offline-note"),
     minicart: document.getElementById("pos-minicart"),
     mcCount: document.getElementById("mc-count"),
-    mcTotal: document.getElementById("mc-total")
+    mcTotal: document.getElementById("mc-total"),
+    cartPanel: document.querySelector(".cart-panel"),
+    confirmDialog: document.getElementById("sale-confirm-modal"),
+    confirmButton: document.getElementById("confirm-complete-sale"),
+    confirmItems: document.getElementById("confirm-items"),
+    confirmTotal: document.getElementById("confirm-total"),
+    confirmPayment: document.getElementById("confirm-payment"),
+    confirmChange: document.getElementById("confirm-change"),
+    confirmChangeLabel: document.getElementById("confirm-change-label")
   };
 
   /** cart: [{id, name, price, stock, unit, fractions, step, qty}] */
   var cart = [];
+  var cartPanelInView = false;
 
   /* ------------------------------------------------------------------ */
   /* Money helpers — cents as integers, never floats for the arithmetic  */
@@ -315,9 +325,11 @@
   /** The phone-only running total pinned above the tab bar. */
   function updateMiniCart(hasItems, units, total) {
     if (!el.minicart) return;
-    document.body.classList.toggle("has-cart", hasItems);
-    el.minicart.hidden = !hasItems;
-    if (!hasItems) {
+    var shouldShow = hasItems && !cartPanelInView;
+    document.body.classList.toggle("has-cart", shouldShow);
+    el.minicart.hidden = !shouldShow;
+    el.minicart.setAttribute("aria-hidden", String(!shouldShow));
+    if (!shouldShow) {
       el.minicart.classList.remove("is-visible");
       return;
     }
@@ -424,7 +436,10 @@
       return;
     }
     if (event.target.closest("#pos-minicart")) {
-      document.querySelector(".cart-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelector(".cart-panel").scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "end"
+      });
       return;
     }
     if (event.target.closest("#clear-cart")) {
@@ -481,6 +496,23 @@
     }
   });
 
+  function setSearchBusy(isBusy) {
+    el.results.setAttribute("aria-busy", String(isBusy));
+    if (!el.searchSpinner) return;
+    el.searchSpinner.hidden = !isBusy;
+    el.searchSpinner.setAttribute("aria-hidden", String(!isBusy));
+  }
+
+  document.body.addEventListener("htmx:beforeRequest", function (event) {
+    if (event.detail && event.detail.elt === el.search) setSearchBusy(true);
+  });
+  document.body.addEventListener("htmx:afterRequest", function (event) {
+    if (event.detail && event.detail.elt === el.search) setSearchBusy(false);
+  });
+  document.body.addEventListener("htmx:responseError", function (event) {
+    if (event.detail && event.detail.elt === el.search) setSearchBusy(false);
+  });
+
   /* Submission.
    *
    * confirm() is synchronous, so the decision is made inside the submit event
@@ -503,20 +535,46 @@
     render();
   }
 
+  var confirmation = el.confirmDialog && window.bootstrap
+    ? new window.bootstrap.Modal(el.confirmDialog)
+    : null;
+
+  function showSaleConfirmation() {
+    var method = form.querySelector('input[name="payment_method"]:checked');
+    var methodLabel = method && method.nextElementSibling
+      ? method.nextElementSibling.textContent.trim()
+      : "Not selected";
+    el.confirmItems.textContent = el.sumItems.textContent;
+    el.confirmTotal.textContent = el.sumTotal.textContent;
+    el.confirmPayment.textContent = methodLabel;
+    var showChange = method && method.value === "cash" && el.cash.value && !el.changeBlock.hidden;
+    el.confirmChange.hidden = !showChange;
+    el.confirmChangeLabel.hidden = !showChange;
+    if (showChange) el.confirmChange.textContent = el.changeAmount.textContent;
+    confirmation.show();
+  }
+
+  if (el.confirmButton) {
+    el.confirmButton.addEventListener("click", function () {
+      form.dataset.confirmed = "true";
+      confirmation.hide();
+      form.requestSubmit();
+    });
+  }
+
   form.addEventListener("submit", function (event) {
     if (!cart.length || form.dataset.sending === "true") {
       event.preventDefault();
       return;
     }
 
-    var message = "Complete this sale for " + el.sumTotal.textContent + "?";
-    var method = form.querySelector('input[name="payment_method"]:checked');
-    if (method && method.value === "cash" && el.cash.value) {
-      message += "\nChange due: " + el.changeAmount.textContent;
-    }
-
-    if (!window.confirm(message)) {
+    if (form.dataset.confirmed !== "true") {
       event.preventDefault();
+      if (confirmation) showSaleConfirmation();
+      else if (window.confirm("Complete this sale for " + el.sumTotal.textContent + "?")) {
+        form.dataset.confirmed = "true";
+        form.requestSubmit();
+      }
       return;
     }
 
@@ -546,9 +604,20 @@
     if (el.offlineNote) el.offlineNote.hidden = true;
   });
 
+  if (el.cartPanel && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      cartPanelInView = entries[0].isIntersecting;
+      render();
+    }, { threshold: 0.01 }).observe(el.cartPanel);
+  }
+
   /* ------------------------------------------------------------------ */
   if (!el.keyField.value) el.keyField.value = newKey();
   restore();
   render();
-  if (navigator.onLine === false && el.offlineNote) el.offlineNote.hidden = false;
+  setSearchBusy(false);
+  if (navigator.onLine === false) {
+    if (el.offlineNote) el.offlineNote.hidden = false;
+    if (window.JCF) window.JCF.showBanner("No connection — your sale is kept on this device, but it has not been recorded yet.", false);
+  }
 })();

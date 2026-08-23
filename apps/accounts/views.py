@@ -76,10 +76,10 @@ def profile(request):
 
 
 @login_required
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 def change_password(request):
-    form = ChangeOwnPasswordForm(request.user, request.POST)
-    if form.is_valid():
+    form = ChangeOwnPasswordForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
         form.save()
         update_session_auth_hash(request, request.user)
         record(
@@ -91,11 +91,7 @@ def change_password(request):
         messages.success(request, "Your password has been changed.")
         return redirect("accounts:profile")
 
-    return render(
-        request,
-        "accounts/profile.html",
-        {"form": ProfileForm(instance=request.user), "password_form": form},
-    )
+    return render(request, "accounts/change_password.html", {"form": form})
 
 
 # --------------------------------------------------------------------------------------

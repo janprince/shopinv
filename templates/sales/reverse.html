@@ -49,7 +49,7 @@
   {% include "partials/form_errors.html" %}
   {% include "partials/field.html" with field=form.reason %}
   {% include "partials/field.html" with field=form.confirm %}
-  <div class="form-actions">
+  <div class="form-actions danger-action-footer">
     <a class="btn btn-quiet" href="{{ sale.get_absolute_url }}">Cancel</a>
     <button type="submit" class="btn btn-danger"><span class="btn-label">Reverse this sale</span></button>
   </div>

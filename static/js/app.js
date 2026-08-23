@@ -32,7 +32,7 @@
 
   function handleOffline() {
     window.clearTimeout(backTimer);
-    showBanner("No internet connection — your work is saved on this device", false);
+    showBanner("No internet connection. Keep this page open; unsaved form changes have not been saved.", false);
     document.body.classList.add("is-offline");
   }
 
@@ -138,6 +138,105 @@
     });
   }
 
+  function wireNavigationSelect(select) {
+    select.addEventListener("change", function () {
+      if (select.value) window.location.assign(select.value);
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+   * Mobile disclosures keep results ahead of dense filter controls.
+   * ------------------------------------------------------------------ */
+  function wireMobileDisclosure(details) {
+    var phone = window.matchMedia("(max-width: 767.98px)");
+    function sync() {
+      if (phone.matches && !details.dataset.mobileInitialised) {
+        details.open = false;
+        details.dataset.mobileInitialised = "true";
+      } else if (!phone.matches) {
+        details.open = true;
+        delete details.dataset.mobileInitialised;
+      }
+    }
+    sync();
+    if (phone.addEventListener) phone.addEventListener("change", sync);
+    else phone.addListener(sync);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Search within long native selects without replacing their semantics.
+   * ------------------------------------------------------------------ */
+  function wireSearchableSelect(select) {
+    if (select.dataset.searchWired === "true") return;
+    select.dataset.searchWired = "true";
+    var search = document.createElement("input");
+    search.type = "search";
+    search.className = "form-control mb-2";
+    search.placeholder = select.dataset.searchPlaceholder || "Search by name or code";
+    search.setAttribute("aria-label", select.dataset.searchLabel || "Search options");
+    var options = Array.prototype.map.call(select.options, function (option) {
+      return { option: option, text: option.textContent.toLowerCase() };
+    });
+    search.addEventListener("input", function () {
+      var term = search.value.trim().toLowerCase();
+      options.forEach(function (item, index) {
+        item.option.hidden = index > 0 && !!term && item.text.indexOf(term) === -1;
+      });
+      var matches = options.filter(function (item, index) {
+        return index > 0 && !item.option.hidden;
+      });
+      if (matches.length === 1) {
+        select.value = matches[0].option.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+    select.parentNode.insertBefore(search, select);
+  }
+
+  /* ---------------------------------------------------------------------
+   * Long forms expose a save bar only after an edit and warn on navigation.
+   * ------------------------------------------------------------------ */
+  function wireDirtyForm(form) {
+    var dirty = false;
+    function markDirty(event) {
+      if (!event.target.matches("input, select, textarea")) return;
+      dirty = true;
+      form.classList.add("is-dirty");
+    }
+    form.addEventListener("input", markDirty);
+    form.addEventListener("change", markDirty);
+    form.addEventListener("submit", function () { dirty = false; });
+    window.addEventListener("beforeunload", function (event) {
+      if (!dirty || form.dataset.submitted === "true") return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+   * Analytical tables announce overflow and remain keyboard scrollable.
+   * ------------------------------------------------------------------ */
+  function wireTableWrap(wrap) {
+    if (wrap.dataset.scrollWired === "true") return;
+    wrap.dataset.scrollWired = "true";
+    if (wrap.closest(".table-responsive-cards")) return;
+    wrap.tabIndex = 0;
+    wrap.setAttribute("role", "region");
+    var caption = wrap.querySelector("caption");
+    wrap.setAttribute("aria-label", caption ? caption.textContent.trim() : "Scrollable data table");
+    var hint = document.createElement("p");
+    hint.className = "table-scroll-hint no-print";
+    hint.textContent = "Swipe or use arrow keys to see more columns";
+    wrap.parentNode.insertBefore(hint, wrap);
+    function update() {
+      var overflows = wrap.scrollWidth > wrap.clientWidth + 2;
+      wrap.classList.toggle("is-overflowing", overflows);
+      hint.hidden = !overflows;
+    }
+    update();
+    window.addEventListener("resize", update);
+  }
+
   /* ---------------------------------------------------------------------
    * Live "expected quantity after this change" preview on adjustment forms
    * ------------------------------------------------------------------ */
@@ -178,6 +277,11 @@
     scope.querySelectorAll("[data-toggle-target]").forEach(wirePasswordToggle);
     scope.querySelectorAll("[data-confirm]").forEach(wireConfirm);
     scope.querySelectorAll("select[data-auto-submit]").forEach(wireAutoSubmit);
+    scope.querySelectorAll("select[data-navigate-select]").forEach(wireNavigationSelect);
+    scope.querySelectorAll("details[data-mobile-collapse]").forEach(wireMobileDisclosure);
+    scope.querySelectorAll("select[data-searchable-select]").forEach(wireSearchableSelect);
+    scope.querySelectorAll("form[data-dirty-form]").forEach(wireDirtyForm);
+    scope.querySelectorAll(".table-wrap").forEach(wireTableWrap);
     scope.querySelectorAll("[data-quantity-preview]").forEach(wireQuantityPreview);
     scope.querySelectorAll("[data-autofocus]").forEach(function (element) {
       if (!("ontouchstart" in window) || element.dataset.autofocus === "always") element.focus();

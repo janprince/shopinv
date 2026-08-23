@@ -10,7 +10,7 @@
     <div class="empty-state">
       <div class="glyph">{% icon "alert" 26 %}</div>
       <p class="label-caps">Error {{ code }}</p>
-      <h3>{{ title }}</h3>
+      <h1 class="h5">{{ title }}</h1>
       <p>{{ body }}</p>
       <div class="d-flex gap-2 justify-content-center flex-wrap">
         <a class="btn btn-primary" href="{% url 'core:dashboard' %}">Go to the dashboard</a>
@@ -28,7 +28,7 @@
       <div class="empty-state">
         <div class="glyph">{% icon "alert" 26 %}</div>
         <p class="label-caps">Error {{ code }}</p>
-        <h3>{{ title }}</h3>
+        <h1 class="h5">{{ title }}</h1>
         <p>{{ body }}</p>
         <a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to sign in</a>
       </div>

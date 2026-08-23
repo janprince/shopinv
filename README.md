@@ -130,8 +130,8 @@ ones that matter:
 | `DATABASE_URL` | yes | `postgres://localhost:5432/jcforganic` in debug | Standard PostgreSQL URL. |
 | `DJANGO_SECRET_KEY` | in production | — | The app **refuses to start** without one when debug is off. Generate with `python manage.py generate_secret_key`. |
 | `DJANGO_DEBUG` | no | `false` | Never `true` in production. |
-| `DJANGO_ALLOWED_HOSTS` | in production | — | Comma-separated hostnames. |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | behind a proxy | — | Comma-separated `https://` origins. |
+| `DJANGO_ALLOWED_HOSTS` | in production | — | Comma-separated hostnames. Debug mode allows all hosts for local and device testing. |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | behind a proxy | — | Comma-separated `https://` origins. Debug mode accepts all origins while still validating CSRF tokens. |
 | `DB_SSL_REQUIRE` | on managed DBs | `false` | Set `true` on Render. |
 | `DJANGO_TIME_ZONE` | no | `Africa/Accra` | |
 | `CURRENCY_SYMBOL` | no | `GH₵` | |

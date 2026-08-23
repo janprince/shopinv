@@ -44,7 +44,10 @@ if not SECRET_KEY:
             "Generate one with: python manage.py generate_secret_key"
         )
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]" if DEBUG else "")
+# Development servers may be reached through LAN IPs, device simulators, Docker
+# hostnames, or temporary tunnels. Django's host validation is still enforced in
+# production, where the allow-list must be supplied explicitly.
+ALLOWED_HOSTS = ["*"] if DEBUG else env_list("DJANGO_ALLOWED_HOSTS")
 
 # Render supplies the external hostname at runtime.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
@@ -77,7 +80,11 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    (
+        "apps.core.middleware.DevelopmentCsrfViewMiddleware"
+        if DEBUG
+        else "django.middleware.csrf.CsrfViewMiddleware"
+    ),
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

@@ -204,11 +204,11 @@ def product_detail(request, pk: int):
     )
     movements = product.movements.select_related("user", "sale", "batch").order_by(
         "-created_at", "-id"
-    )[:20]
+    )[:10]
     recent_sales = (
         product.sale_items.select_related("sale", "sale__user")
         .filter(sale__status="completed")
-        .order_by("-sale__completed_at")[:10]
+        .order_by("-sale__completed_at")[:5]
     )
     sold_totals = product.sale_items.filter(sale__status="completed").aggregate(
         units=Coalesce(Sum("quantity"), Decimal("0")),
@@ -401,7 +401,7 @@ def supplier_list(request):
 def supplier_detail(request, pk: int):
     supplier = get_object_or_404(Supplier, pk=pk)
     batches = supplier.batches.select_related("product", "received_by").order_by("-received_at")[
-        :50
+        :15
     ]
     totals = supplier.batches.aggregate(
         deliveries=Count("id"),

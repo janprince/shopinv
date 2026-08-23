@@ -17,7 +17,7 @@ from .forms import AdjustStockForm, MovementFilterForm, ReceiveStockForm
 from .models import ADJUSTMENT_HELP, INCREASE_TYPES, MovementType, StockBatch, StockMovement
 from .services import StockError, adjust_stock, receive_stock
 
-PAGE_SIZE = 40
+PAGE_SIZE = 10
 
 
 # --------------------------------------------------------------------------------------
