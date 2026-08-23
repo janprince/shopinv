@@ -23,21 +23,37 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+# Bake the hashed static files into the image. Production uses WhiteNoise's
+# manifest storage, so without this every page raises "Missing staticfiles
+# manifest entry" on the first request. The key here is a throwaway used only to
+# let settings import during the build; the real one comes from the environment.
+RUN DJANGO_DEBUG=false \
+    DJANGO_SECRET_KEY=build-time-placeholder-not-used-at-runtime \
+    DATABASE_URL=postgres://build/placeholder \
+    python manage.py collectstatic --noinput --clear
+
 # Run as an unprivileged user.
 RUN useradd --create-home --shell /usr/sbin/nologin shopkeeper \
     && mkdir -p /app/staticfiles /app/media \
     && chown -R shopkeeper:shopkeeper /app
 USER shopkeeper
 
+# Hosting platforms inject the port to listen on. Default to 8000 so plain
+# `docker run` and docker compose still work unchanged.
+ENV PORT=8000
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS http://localhost:8000/healthz/ || exit 1
+    CMD curl -fsS "http://127.0.0.1:${PORT}/healthz/" || exit 1
 
-CMD ["gunicorn", "config.wsgi:application", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "3", \
-     "--threads", "2", \
-     "--timeout", "60", \
-     "--access-logfile", "-", \
-     "--error-logfile", "-"]
+# Shell form on purpose: $PORT has to expand at container start, and the JSON
+# array form does not run a shell. `exec` hands the process over so gunicorn is
+# PID 1 and receives SIGTERM directly — without it the platform's shutdown
+# signal stops at /bin/sh and workers are killed rather than drained.
+CMD exec gunicorn config.wsgi:application \
+      --bind "0.0.0.0:${PORT}" \
+      --workers "${WEB_CONCURRENCY:-3}" \
+      --threads 2 \
+      --timeout 60 \
+      --access-logfile - \
+      --error-logfile -

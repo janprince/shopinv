@@ -271,3 +271,49 @@ class UserManagementTests(TestCase):
     def test_a_superuser_is_always_an_owner(self):
         admin = User.objects.create_superuser("root", password="root-pass-2026")
         self.assertTrue(admin.is_owner)
+
+
+class CreateOwnerCommandTests(TestCase):
+    """`create_owner` doubles as a deploy hook, so it must be safe to run every time."""
+
+    def _run(self, **kwargs):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        call_command("create_owner", stdout=out, stderr=out, **kwargs)
+        return out.getvalue()
+
+    def test_it_creates_the_first_owner_from_the_environment(self):
+        with self.settings():
+            import os
+
+            os.environ["OWNER_USERNAME"] = "ama"
+            os.environ["OWNER_PASSWORD"] = "shop-pass-2026"
+            try:
+                self._run(from_env=True, skip_if_exists=True)
+            finally:
+                del os.environ["OWNER_USERNAME"], os.environ["OWNER_PASSWORD"]
+
+        owner = User.objects.get(username="ama")
+        self.assertEqual(owner.role, Role.OWNER)
+        self.assertTrue(owner.check_password("shop-pass-2026"))
+
+    def test_running_it_again_once_an_owner_exists_is_a_no_op(self):
+        make_owner(username="ama")
+        output = self._run(from_env=True, skip_if_exists=True)
+        self.assertIn("already exists", output)
+        self.assertEqual(User.objects.filter(role=Role.OWNER).count(), 1)
+
+    def test_a_deploy_hook_without_credentials_warns_instead_of_failing(self):
+        """A failed deploy is a worse outcome than an app with no owner yet."""
+        output = self._run(from_env=True, skip_if_exists=True)
+        self.assertIn("not set", output)
+        self.assertFalse(User.objects.exists())
+
+    def test_without_the_deploy_flag_missing_credentials_are_still_an_error(self):
+        from django.core.management.base import CommandError
+
+        with self.assertRaises(CommandError):
+            self._run(from_env=True)

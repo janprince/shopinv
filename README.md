@@ -21,6 +21,7 @@ plain-language guide written for the shopkeeper and the owner, not for developer
 - [Creating the owner account](#creating-the-owner-account)
 - [Sample data](#sample-data)
 - [Running the tests](#running-the-tests)
+- [Deploying to Railway](#deploying-to-railway)
 - [Deploying to Render](#deploying-to-render)
 - [Backup and restore](#backup-and-restore)
 - [Key business rules](#key-business-rules)
@@ -231,6 +232,70 @@ python manage.py verify_stock --fix    # repair it
 ```
 
 ---
+
+## Deploying to Railway
+
+The repository carries `railway.json`, so Railway builds the `Dockerfile` and
+knows how to migrate and how to health-check. The steps:
+
+1. **New Project → Deploy from GitHub repo**, and pick this repository.
+2. **Add a PostgreSQL database** to the same project (`New → Database → Postgres`).
+3. On the **app service → Variables**, add:
+
+   | Variable | Value |
+   | --- | --- |
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — a reference, not a literal |
+   | `DJANGO_SECRET_KEY` | output of `python manage.py generate_secret_key` |
+   | `DJANGO_DEBUG` | `false` |
+   | `OWNER_USERNAME` | e.g. `ama` |
+   | `OWNER_EMAIL` | optional |
+   | `OWNER_PASSWORD` | a strong password, **deleted again after the first deploy** |
+
+   `DJANGO_ALLOWED_HOSTS` is *not* required: the app reads Railway's own
+   `RAILWAY_PUBLIC_DOMAIN` and trusts it for both host validation and CSRF. Set
+   it only when you attach a custom domain.
+
+4. **Deploy.** The pre-deploy command in `railway.json` runs
+
+   ```
+   python manage.py migrate --noinput && python manage.py create_owner --from-env --skip-if-exists
+   ```
+
+   once per release, before any traffic reaches the new version. Both halves are
+   idempotent: migrations that have run are skipped, and `create_owner` does
+   nothing once an owner exists.
+
+5. **Delete `OWNER_PASSWORD`** from the service variables. The account exists
+   now, and later deploys no longer need it.
+
+### Running a one-off command against the deployed app
+
+```bash
+railway link                       # once, to attach this directory to the service
+railway ssh                        # a shell inside the running container
+python manage.py create_owner      # interactive, if you skipped the OWNER_* route
+python manage.py verify_stock
+```
+
+`railway run <cmd>` executes **locally** with Railway's variables injected — and
+`DATABASE_URL` points at `*.railway.internal`, which does not resolve outside
+Railway's network. For anything that touches the database from your own machine,
+use `DATABASE_PUBLIC_URL` instead:
+
+```bash
+DATABASE_URL="$(railway variables --json | python3 -c 'import json,sys;print(json.load(sys.stdin)["DATABASE_PUBLIC_URL"])')"   python manage.py migrate
+```
+
+### Notes
+
+* **Static files are baked into the image** at build time, so no volume or
+  post-deploy step is needed. Production uses WhiteNoise's manifest storage;
+  without that build step every page raises `Missing staticfiles manifest entry`.
+* **The container listens on `$PORT`**, which Railway injects. It defaults to
+  8000 so `docker run` and Docker Compose keep working unchanged.
+* **`/healthz/` is exempt from the HTTPS redirect**, because Railway probes it
+  over the private network in plain HTTP. Every user-facing route stays
+  HTTPS-only.
 
 ## Deploying to Render
 
