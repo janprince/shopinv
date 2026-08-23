@@ -255,23 +255,33 @@ knows how to migrate and how to health-check. The steps:
    `RAILWAY_PUBLIC_DOMAIN` and trusts it for both host validation and CSRF. Set
    it only when you attach a custom domain.
 
-4. **Deploy.** The container bootstraps itself on start
-   (`docker-entrypoint.sh`): it migrates, ensures the owner exists, then hands
-   over to gunicorn. Both steps are idempotent, and both print to the ordinary
-   deploy logs:
+4. **Deploy.** Migrations and the first owner run twice over, on purpose:
+
+   * `railway.json` declares a `preDeployCommand`, which Railway runs once per
+     release in a short-lived container **before** traffic reaches the new
+     version. This is the right place for schema changes — if a migration
+     fails, the deploy fails and the previous version keeps serving.
+   * `docker-entrypoint.sh` runs the same two steps again at container start,
+     prefixed `[boot]`, then hands over to gunicorn.
+
+   Both steps are idempotent, so the second pass costs two no-op commands. The
+   duplication is deliberate: a platform hook that silently does not fire is
+   indistinguishable from a broken app — the site comes up, the health check
+   passes, and the only symptom is "username or password is not correct" on a
+   sign-in page with no accounts behind it.
+
+   A healthy first deploy logs roughly:
 
    ```
-   ==> Applying database migrations
-   ==> Ensuring the first owner account exists
-   Owner "ama" created.
-   ==> Starting web server on port 8080
+   Owner "ama" created.                       <- preDeployCommand
+   [boot] ==> Applying database migrations
+     No migrations to apply.
+   [boot] ==> Ensuring the first owner account exists
+   An owner already exists — nothing to do.   <- entrypoint, work already done
+   [boot] ==> Handing over to the web server on port 8080
    ```
 
-   This deliberately does **not** use a platform hook. Railway's
-   `preDeployCommand`, Render's `buildCommand` and Fly's `release_command` all
-   do the same job in three different places, and a hook that silently does not
-   fire looks exactly like a broken app: the site comes up and nobody can sign
-   in.
+   The `[boot]` prefix tells you which of the two actually did the work.
 
 5. **Delete `OWNER_PASSWORD`** from the service variables. The account exists
    now, and later deploys no longer need it.
@@ -304,6 +314,14 @@ DATABASE_URL="$(railway variables --json | python3 -c 'import json,sys;print(jso
 * **`/healthz/` is exempt from the HTTPS redirect**, because Railway probes it
   over the private network in plain HTTP. Every user-facing route stays
   HTTPS-only.
+* **`ALLOWED_HOSTS` is deliberately stricter than Railway's own Django guide**,
+  which suggests `["*"]`. This app reads `RAILWAY_PUBLIC_DOMAIN` instead, so a
+  request arriving with an unexpected `Host` header is still rejected with 400.
+* **`railway.json` validates against Railway's published JSON schema**
+  (`https://backboard.railway.app/railway.schema.json`). Note that
+  `preDeployCommand` accepts a string or a **single-element** array — the
+  schema sets `maxItems: 1`, so chain multiple commands with `&&` rather than
+  adding array entries.
 
 ## Deploying to Render
 
