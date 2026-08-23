@@ -207,6 +207,10 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+# Railway probes the container over its private HTTP network and requires a
+# direct 200 response. Keep every user-facing route HTTPS-only while allowing
+# the database-backed readiness check to answer without a redirect.
+SECURE_REDIRECT_EXEMPT = [r"^healthz/$"]
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
 

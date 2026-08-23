@@ -193,7 +193,7 @@ def offline(request):
 
 
 def healthz(request):
-    """Used by Render's health check."""
+    """Database-backed readiness check for the hosting platform."""
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")

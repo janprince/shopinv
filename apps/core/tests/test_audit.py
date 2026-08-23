@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.core.exceptions import PermissionDenied
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.core.audit import changed_fields, record
@@ -172,3 +172,15 @@ class HealthCheckTests(TestCase):
         response = self.client.get(reverse("core:healthz"))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "ok")
+
+    def test_the_health_endpoint_bypasses_https_redirects(self):
+        with self.settings(
+            SECURE_SSL_REDIRECT=True,
+            SECURE_REDIRECT_EXEMPT=[r"^healthz/$"],
+        ):
+            client = Client()
+            health_response = client.get(reverse("core:healthz"))
+            normal_response = client.get(reverse("core:dashboard"))
+
+        self.assertEqual(health_response.status_code, 200)
+        self.assertEqual(normal_response.status_code, 301)
