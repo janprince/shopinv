@@ -8,7 +8,7 @@
   <div class="title-block">
     <h1>{{ product.name }}</h1>
     <p class="lede">
-      <span class="mono">{{ product.sku }}</span> · {{ product.category.name }} · sold by {{ product.get_unit_display|lower }}
+      {% if product.sku %}<span class="mono">{{ product.sku }}</span> · {% endif %}{{ product.category.name }} · sold by {{ product.get_unit_display|lower }}
     </p>
     <div class="d-flex flex-wrap gap-1 mt-2">
       {% stock_badge product %}
@@ -212,7 +212,7 @@
       <div class="card-body">
         <dl class="row mb-0" style="font-size: 0.875rem;">
           <dt class="col-5 text-muted-warm fw-normal">Product code</dt>
-          <dd class="col-7 mono">{{ product.sku }}</dd>
+          <dd class="col-7 mono">{{ product.sku|default:"—" }}</dd>
           <dt class="col-5 text-muted-warm fw-normal">Category</dt>
           <dd class="col-7">{{ product.category.name }}</dd>
           <dt class="col-5 text-muted-warm fw-normal">Sold by</dt>

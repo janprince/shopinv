@@ -42,7 +42,7 @@
             <tr>
               <td class="text-muted-warm tnum">{{ forloop.counter }}</td>
               <td><a class="cell-primary" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
-                <div class="cell-sub mono">{{ row.sku }}</div></td>
+                {% if row.sku %}<div class="cell-sub mono">{{ row.sku }}</div>{% endif %}</td>
               <td class="cell-sub">{{ row.product__category__name|default:"—" }}</td>
               <td class="text-end tnum">{{ row.units|qty }}</td>
               <td class="text-end tnum fw-semibold">{{ row.revenue|cedis }}</td>
@@ -62,7 +62,7 @@
         <div class="data-card">
           <div class="dc-head">
             <div><a class="dc-title" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
-              <div class="dc-sub mono">{{ row.sku }}</div></div>
+              {% if row.sku %}<div class="dc-sub mono">{{ row.sku }}</div>{% endif %}</div>
             <span class="rank-no">{{ forloop.counter }}</span>
           </div>
           <dl class="dc-rows">
@@ -90,7 +90,7 @@
           {% for row in slow %}
             <tr>
               <td><a class="cell-primary" href="{{ row.product.get_absolute_url }}">{{ row.product.name }}</a>
-                <div class="cell-sub mono">{{ row.product.sku }}</div></td>
+                {% if row.product.sku %}<div class="cell-sub mono">{{ row.product.sku }}</div>{% endif %}</td>
               <td class="cell-sub">{{ row.product.category.name }}</td>
               <td class="text-end tnum {% if not row.units %}text-muted-warm{% endif %}">
                 {% if row.units %}{{ row.units|qty }}{% else %}None{% endif %}</td>

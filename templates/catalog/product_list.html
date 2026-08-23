@@ -102,7 +102,7 @@
               <tr>
                 <td>
                   <a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                  <div class="cell-sub mono">{{ product.sku }}</div>
+                  {% if product.sku %}<div class="cell-sub mono">{{ product.sku }}</div>{% endif %}
                 </td>
                 <td class="cell-sub">{{ product.category.name }}</td>
                 <td class="text-end tnum fw-semibold">{{ product.display_stock }}</td>
@@ -130,7 +130,7 @@
           <a class="product-mobile-row" href="{{ product.get_absolute_url }}">
             <span class="min-w-0">
               <span class="dc-title d-block">{{ product.name }}</span>
-              <span class="dc-sub d-block"><span class="mono">{{ product.sku }}</span> · {{ product.category.name }}</span>
+              <span class="dc-sub d-block">{% if product.sku %}<span class="mono">{{ product.sku }}</span> · {% endif %}{{ product.category.name }}</span>
             </span>
             <span class="product-mobile-stock">
               <strong class="tnum">{{ product.display_stock }}</strong>

@@ -511,8 +511,8 @@ class DateInputTests(TestCase):
         response = self.client.post(
             reverse("catalog:product_create"),
             {
-                "name": "Test",
-                "sku": "",  # blank SKU forces redisplay
+                "name": "",  # blank name forces the form to redisplay
+                "sku": "TEST-1",
                 "category": Category.objects.first().pk,
                 "unit": "piece",
                 "description": "",

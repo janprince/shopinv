@@ -41,7 +41,7 @@
             <span>{{ product.display_stock }} left</span>
           {% endif %}
         </span>
-        <span class="pr-meta mono">{{ product.sku }}</span>
+        {% if product.sku %}<span class="pr-meta mono">{{ product.sku }}</span>{% endif %}
       </button>
     {% endfor %}
   </div>

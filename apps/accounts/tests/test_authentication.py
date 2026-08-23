@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -276,26 +278,31 @@ class UserManagementTests(TestCase):
 class CreateOwnerCommandTests(TestCase):
     """`create_owner` doubles as a deploy hook, so it must be safe to run every time."""
 
-    def _run(self, **kwargs):
+    def _run(self, env=None, **kwargs):
+        """Run the command with an explicit OWNER_* environment.
+
+        The variables are cleared unless the test supplies them, so a developer
+        whose .env points at a real deployment does not silently change what
+        these tests are asserting.
+        """
         from io import StringIO
+        from unittest import mock
 
         from django.core.management import call_command
 
+        overrides = {"OWNER_USERNAME": "", "OWNER_EMAIL": "", "OWNER_PASSWORD": ""}
+        overrides.update(env or {})
         out = StringIO()
-        call_command("create_owner", stdout=out, stderr=out, **kwargs)
+        with mock.patch.dict(os.environ, overrides):
+            call_command("create_owner", stdout=out, stderr=out, **kwargs)
         return out.getvalue()
 
     def test_it_creates_the_first_owner_from_the_environment(self):
-        with self.settings():
-            import os
-
-            os.environ["OWNER_USERNAME"] = "ama"
-            os.environ["OWNER_PASSWORD"] = "shop-pass-2026"
-            try:
-                self._run(from_env=True, skip_if_exists=True)
-            finally:
-                del os.environ["OWNER_USERNAME"], os.environ["OWNER_PASSWORD"]
-
+        self._run(
+            env={"OWNER_USERNAME": "ama", "OWNER_PASSWORD": "shop-pass-2026"},
+            from_env=True,
+            skip_if_exists=True,
+        )
         owner = User.objects.get(username="ama")
         self.assertEqual(owner.role, Role.OWNER)
         self.assertTrue(owner.check_password("shop-pass-2026"))

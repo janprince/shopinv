@@ -82,7 +82,7 @@
                 <td class="cell-sub">{{ movement.created_at|date:"j M Y" }}<div>{{ movement.created_at|date:"H:i" }}</div></td>
                 <td>
                   <a class="cell-primary" href="{{ movement.product.get_absolute_url }}">{{ movement.product.name }}</a>
-                  <div class="cell-sub mono">{{ movement.product.sku }}</div>
+                  {% if movement.product.sku %}<div class="cell-sub mono">{{ movement.product.sku }}</div>{% endif %}
                 </td>
                 <td>
 {% movement_badge movement %}

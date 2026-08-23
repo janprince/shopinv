@@ -13,7 +13,7 @@
         {% for batch in batches %}
           <tr>
             <td><a class="cell-primary" href="{{ batch.product.get_absolute_url }}">{{ batch.product.name }}</a>
-              <div class="cell-sub mono">{{ batch.product.sku }}</div></td>
+              {% if batch.product.sku %}<div class="cell-sub mono">{{ batch.product.sku }}</div>{% endif %}</td>
             <td class="cell-sub mono">{{ batch.batch_number|default:"—" }}</td>
             <td class="cell-sub">{{ batch.supplier.name|default:"—" }}</td>
             <td>

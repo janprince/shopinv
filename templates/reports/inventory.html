@@ -65,7 +65,7 @@
           {% for product in low_stock %}
             <tr>
               <td><a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                <div class="cell-sub mono">{{ product.sku }}</div></td>
+                {% if product.sku %}<div class="cell-sub mono">{{ product.sku }}</div>{% endif %}</td>
               <td class="cell-sub">{{ product.category.name }}</td>
               <td class="text-end tnum fw-semibold">{{ product.display_stock }}</td>
               <td class="text-end tnum text-muted-warm">{{ product.minimum_stock|qty }}</td>
@@ -95,7 +95,7 @@
           {% for product in out_of_stock %}
             <tr>
               <td><a class="cell-primary" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                <div class="cell-sub mono">{{ product.sku }}</div></td>
+                {% if product.sku %}<div class="cell-sub mono">{{ product.sku }}</div>{% endif %}</td>
               <td class="cell-sub">{{ product.category.name }}</td>
               <td class="text-end tnum">{{ product.selling_price|cedis }}</td>
               <td class="text-end">

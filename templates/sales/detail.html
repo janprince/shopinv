@@ -57,7 +57,7 @@
                 <tr>
                   <td>
                     <a class="cell-primary" href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
-                    <div class="cell-sub mono">{{ item.sku }}</div>
+                    {% if item.sku %}<div class="cell-sub mono">{{ item.sku }}</div>{% endif %}
                   </td>
                   <td class="text-end tnum">{{ item.display_quantity }}</td>
                   <td class="text-end tnum">{{ item.unit_price|cedis }}</td>
@@ -74,7 +74,7 @@
             <div class="data-card">
               <div class="dc-head">
                 <div><a class="dc-title" href="{{ item.product.get_absolute_url }}">{{ item.product_name }}</a>
-                  <div class="dc-sub mono">{{ item.sku }}</div></div>
+                  {% if item.sku %}<div class="dc-sub mono">{{ item.sku }}</div>{% endif %}</div>
                 <strong class="tnum">{{ item.line_total|cedis }}</strong>
               </div>
               <dl class="dc-rows">

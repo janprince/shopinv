@@ -287,6 +287,14 @@ TESTING = "test" in sys.argv or os.environ.get("PYTEST_VERSION") is not None
 if TESTING:
     LOGGING["root"]["level"] = "CRITICAL"
     LOGGING["loggers"]["jcf"]["level"] = "CRITICAL"
+    # The suite must not depend on whatever is in the developer's .env. With a
+    # production-shaped one (DEBUG off, SSL redirect on) every test POST is
+    # 301'd to https before it reaches a view, which surfaces as a dozen
+    # unrelated failures rather than as the configuration problem it is.
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
     STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
     WHITENOISE_AUTOREFRESH = True

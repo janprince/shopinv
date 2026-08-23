@@ -26,7 +26,7 @@
       <div class="card-body">
         <dl class="row mb-0">
           <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Product</dt>
-          <dd class="col-7 col-sm-8 fw-semibold">{{ data.product.name }}<div class="cell-sub mono">{{ data.product.sku }}</div></dd>
+          <dd class="col-7 col-sm-8 fw-semibold">{{ data.product.name }}{% if data.product.sku %}<div class="cell-sub mono">{{ data.product.sku }}</div>{% endif %}</dd>
 
           <dt class="col-5 col-sm-4 text-muted-warm fw-normal">Quantity received</dt>
           <dd class="col-7 col-sm-8 fw-semibold tnum">{{ data.quantity|qty }} {{ data.product.unit_label }}</dd>

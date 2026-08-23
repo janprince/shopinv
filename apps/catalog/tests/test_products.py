@@ -66,6 +66,50 @@ class ProductCreationTests(TestCase):
                     selling_price=Decimal("2"),
                 )
 
+    def test_a_product_can_be_saved_without_a_code(self):
+        response = self.client.post(reverse("catalog:product_create"), self._payload(sku=""))
+        product = Product.objects.get(name="Cold-Pressed Coconut Oil 500ml")
+        self.assertRedirects(response, product.get_absolute_url())
+        self.assertEqual(product.sku, "")
+
+    def test_several_products_may_have_no_code(self):
+        self.client.post(reverse("catalog:product_create"), self._payload(sku=""))
+        self.client.post(
+            reverse("catalog:product_create"),
+            self._payload(sku="", name="Shea Butter 250g"),
+        )
+        self.assertEqual(Product.objects.filter(sku="").count(), 2)
+
+    def test_the_database_also_permits_many_blank_codes(self):
+        """The unique index is partial, so it must not collide on empty strings."""
+        for name in ("One", "Two", "Three"):
+            Product.objects.create(
+                name=name,
+                sku="",
+                category=self.category,
+                unit=Unit.PIECE,
+                cost_price=Decimal("1"),
+                selling_price=Decimal("2"),
+            )
+        self.assertEqual(Product.objects.filter(sku="").count(), 3)
+
+    def test_a_code_is_still_unique_once_one_is_used(self):
+        self.client.post(reverse("catalog:product_create"), self._payload(sku="COC-500"))
+        response = self.client.post(
+            reverse("catalog:product_create"),
+            self._payload(sku="coc-500", name="Something else"),
+        )
+        self.assertContains(response, "already used by another product")
+        self.assertEqual(Product.objects.filter(sku="COC-500").count(), 1)
+
+    def test_a_product_without_a_code_still_reads_well(self):
+        product = make_product(name="Fresh Ginger", sku="")
+        self.assertEqual(str(product), "Fresh Ginger")
+
+    def test_searching_by_name_still_finds_a_product_with_no_code(self):
+        make_product(name="Fresh Ginger", sku="")
+        self.assertEqual(Product.objects.search("ginger").count(), 1)
+
     def test_duplicate_barcode_is_rejected(self):
         make_product(sku="OTHER-1", barcode="6001234567890")
         response = self.client.post(

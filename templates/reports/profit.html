@@ -76,7 +76,7 @@
               {% for row in by_product %}
                 <tr>
                   <td><a class="cell-primary" href="{% url 'catalog:product_detail' row.product_id %}">{{ row.product_name }}</a>
-                    <div class="cell-sub mono">{{ row.sku }}</div></td>
+                    {% if row.sku %}<div class="cell-sub mono">{{ row.sku }}</div>{% endif %}</td>
                   <td class="text-end tnum">{{ row.units|qty }}</td>
                   <td class="text-end tnum">{{ row.revenue|cedis }}</td>
                   <td class="text-end tnum text-muted-warm">{{ row.cost|cedis }}</td>

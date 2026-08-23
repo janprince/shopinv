@@ -37,7 +37,7 @@
         <tbody>
           {% for item in sale.items.all %}
             <tr>
-              <td class="cell-primary">{{ item.product_name }}<div class="cell-sub mono">{{ item.sku }}</div></td>
+              <td class="cell-primary">{{ item.product_name }}{% if item.sku %}<div class="cell-sub mono">{{ item.sku }}</div>{% endif %}</td>
               <td class="text-end tnum">{{ item.display_quantity }}</td>
               <td class="text-end tnum">{{ item.unit_price|cedis }}</td>
               <td class="text-end tnum">{{ item.line_total|cedis }}</td>

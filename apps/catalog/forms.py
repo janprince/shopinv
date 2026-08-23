@@ -159,13 +159,12 @@ class ProductForm(forms.ModelForm):
             # Stock is only ever changed by receiving or adjusting it.
             del self.fields["opening_quantity"]
             del self.fields["opening_expiry"]
-        else:
-            self.fields[
-                "sku"
-            ].help_text = "A short unique code, e.g. SHEA-250. Used for quick search at the till."
 
     def clean_sku(self):
-        sku = (self.cleaned_data["sku"] or "").strip().upper()
+        sku = (self.cleaned_data.get("sku") or "").strip().upper()
+        if not sku:
+            # Optional. Products without a code are found by name at the till.
+            return ""
         clash = Product.objects.filter(sku__iexact=sku)
         if self.instance.pk:
             clash = clash.exclude(pk=self.instance.pk)

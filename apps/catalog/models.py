@@ -176,9 +176,12 @@ class Product(TimeStampedModel):
     sku = models.CharField(
         _("SKU / product code"),
         max_length=32,
-        unique=True,
+        blank=True,
         validators=[SKU_VALIDATOR],
-        help_text=_("A short unique code you use to identify this product, e.g. HON-500."),
+        help_text=_(
+            "Optional. A short code you use to identify this product, e.g. HON-500. "
+            "It makes searching at the till faster, and must be unique if you use one."
+        ),
     )
     category = models.ForeignKey(
         Category, on_delete=models.PROTECT, related_name="products", verbose_name=_("category")
@@ -248,18 +251,20 @@ class Product(TimeStampedModel):
                 condition=Q(selling_price__gte=Decimal("0")) & Q(cost_price__gte=Decimal("0")),
                 name="product_prices_not_negative",
             ),
-            models.UniqueConstraint(Lower("sku"), name="product_sku_unique_ci"),
+            models.UniqueConstraint(
+                Lower("sku"), condition=~Q(sku=""), name="product_sku_unique_ci"
+            ),
             models.UniqueConstraint(
                 Lower("barcode"), condition=~Q(barcode=""), name="product_barcode_unique_ci"
             ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.sku})"
+        return f"{self.name} ({self.sku})" if self.sku else self.name
 
     def save(self, *args, **kwargs):
         self.name = self.name.strip()
-        self.sku = self.sku.strip().upper()
+        self.sku = (self.sku or "").strip().upper()
         self.barcode = (self.barcode or "").strip()
         return super().save(*args, **kwargs)
 
