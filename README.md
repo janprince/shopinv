@@ -255,15 +255,23 @@ knows how to migrate and how to health-check. The steps:
    `RAILWAY_PUBLIC_DOMAIN` and trusts it for both host validation and CSRF. Set
    it only when you attach a custom domain.
 
-4. **Deploy.** The pre-deploy command in `railway.json` runs
+4. **Deploy.** The container bootstraps itself on start
+   (`docker-entrypoint.sh`): it migrates, ensures the owner exists, then hands
+   over to gunicorn. Both steps are idempotent, and both print to the ordinary
+   deploy logs:
 
    ```
-   python manage.py migrate --noinput && python manage.py create_owner --from-env --skip-if-exists
+   ==> Applying database migrations
+   ==> Ensuring the first owner account exists
+   Owner "ama" created.
+   ==> Starting web server on port 8080
    ```
 
-   once per release, before any traffic reaches the new version. Both halves are
-   idempotent: migrations that have run are skipped, and `create_owner` does
-   nothing once an owner exists.
+   This deliberately does **not** use a platform hook. Railway's
+   `preDeployCommand`, Render's `buildCommand` and Fly's `release_command` all
+   do the same job in three different places, and a hook that silently does not
+   fire looks exactly like a broken app: the site comes up and nobody can sign
+   in.
 
 5. **Delete `OWNER_PASSWORD`** from the service variables. The account exists
    now, and later deploys no longer need it.
